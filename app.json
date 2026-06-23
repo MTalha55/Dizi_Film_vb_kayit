@@ -10,6 +10,8 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "dizi55.arsiv",
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/android-icon-foreground.png",
@@ -19,6 +21,12 @@
     },
     "web": {
       "favicon": "./assets/favicon.png"
-    }
+    },
+    "extra": {
+      "eas": {
+        "projectId": "fe8eaa3d-8d2a-461b-853a-05efd8815dad"
+      }
+    },
+    "owner": "xenon_state"
   }
 }
