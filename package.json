@@ -27,7 +27,7 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "predeploy": "npx expo export -p web && type nul > dist/.nojekyll",
-    "deploy": "gh-pages -d dist"
+    "deploy": "gh-pages -t -d dist"
   },
   "private": true,
   "devDependencies": {
