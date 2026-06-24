@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef } from 'react';
 import { 
   StyleSheet, 
   Text, 
@@ -11,7 +11,7 @@ import {
   TouchableOpacity
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { signInWithEmailAndPassword } from 'firebase/auth';
+import { signInWithEmailAndPassword, sendPasswordResetEmail } from 'firebase/auth';
 import { auth } from '../firebase/config';
 import { colors, layout } from '../theme/colors';
 import CustomInput from '../components/CustomInput';
@@ -22,6 +22,7 @@ const LoginScreen = ({ navigation }) => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
+  const passwordRef = useRef(null);
 
   // Cross-platform Bildirim Yardımcısı
   const notify = (title, message, isSuccess = false) => {
@@ -78,10 +79,44 @@ const LoginScreen = ({ navigation }) => {
     }
   };
 
+  const handleForgotPassword = async () => {
+    if (!email.trim()) {
+      setErrors({ email: 'Şifre sıfırlama bağlantısı göndermek için e-posta alanını doldurun.' });
+      return;
+    }
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      setErrors({ email: 'Geçerli bir e-posta adresi girin.' });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      await sendPasswordResetEmail(auth, email.trim());
+      setLoading(false);
+      notify(
+        'Bağlantı Gönderildi',
+        'Şifre sıfırlama e-postası başarıyla gönderildi. Lütfen e-postanızı (ve gereksiz kutusunu) kontrol edin.',
+        true
+      );
+    } catch (error) {
+      setLoading(false);
+      console.error(error);
+      let errorMessage = 'Şifre sıfırlama e-postası gönderilirken bir hata oluştu.';
+      
+      if (error.code === 'auth/user-not-found') {
+        errorMessage = 'Bu e-posta adresine kayıtlı bir kullanıcı bulunamadı.';
+      } else if (error.code === 'auth/invalid-email') {
+        errorMessage = 'Geçersiz e-posta adresi.';
+      }
+      
+      notify('Hata', errorMessage, false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       {/* Ambient Glows */}
-      <View style={styles.glowTop} />
+      <View style={[styles.glowTop, { backgroundColor: colors.primary }]} />
       <View style={styles.glowBottom} />
 
       <KeyboardAvoidingView
@@ -103,7 +138,7 @@ const LoginScreen = ({ navigation }) => {
             <Text style={styles.subtitle}>Devam etmek için giriş yapın</Text>
           </View>
 
-          <View style={styles.form}>
+          <View style={[styles.form, { shadowColor: colors.primary }]}>
             <CustomInput
               label="E-posta"
               placeholder="E-posta adresinizi girin"
@@ -114,10 +149,14 @@ const LoginScreen = ({ navigation }) => {
               }}
               error={errors.email}
               keyboardType="email-address"
+              autoComplete="email"
               iconName="mail-outline"
+              returnKeyType="next"
+              onSubmitEditing={() => passwordRef.current?.focus()}
             />
 
             <CustomInput
+              ref={passwordRef}
               label="Şifre"
               placeholder="Şifrenizi girin"
               value={password}
@@ -127,8 +166,19 @@ const LoginScreen = ({ navigation }) => {
               }}
               error={errors.password}
               secureTextEntry
+              autoComplete="password"
               iconName="lock-closed-outline"
+              returnKeyType="done"
+              onSubmitEditing={handleLogin}
             />
+
+            <TouchableOpacity 
+              onPress={handleForgotPassword}
+              style={styles.forgotBtn}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.forgotText, { color: colors.primaryLight }]}>Şifremi Unuttum</Text>
+            </TouchableOpacity>
 
             <CustomButton
               title="Giriş Yap"
@@ -141,7 +191,7 @@ const LoginScreen = ({ navigation }) => {
           <View style={styles.footer}>
             <Text style={styles.footerText}>Hesabınız yok mu? </Text>
             <TouchableOpacity onPress={() => navigation.navigate('Register')}>
-              <Text style={styles.linkText}>Kayıt Ol</Text>
+              <Text style={[styles.linkText, { color: colors.primaryLight }]}>Kayıt Ol</Text>
             </TouchableOpacity>
           </View>
         </ScrollView>
@@ -203,7 +253,20 @@ const styles = StyleSheet.native || StyleSheet.create({
     })
   },
   button: {
-    marginTop: layout.spacing.md,
+    marginTop: layout.spacing.sm,
+  },
+  forgotBtn: {
+    alignSelf: 'flex-end',
+    marginTop: 4,
+    marginBottom: layout.spacing.sm,
+    paddingVertical: 4,
+    paddingHorizontal: 2,
+  },
+  forgotText: {
+    fontSize: 12.5,
+    color: colors.primaryLight,
+    fontWeight: '700',
+    textDecorationLine: 'underline',
   },
   footer: {
     flexDirection: 'row',

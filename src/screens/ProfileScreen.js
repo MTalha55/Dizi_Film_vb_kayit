@@ -11,19 +11,20 @@ import {
   TouchableOpacity,
   Image,
   Modal,
+  Linking,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { signOut } from 'firebase/auth';
-import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { collection, query, where, onSnapshot, doc } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
-import { colors, layout } from '../theme/colors';
+import { colors, layout, accentThemes, getThemeName, changeTheme } from '../theme/colors';
 import CustomButton from '../components/CustomButton';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as ImagePicker from 'expo-image-picker';
 
 const PHOTO_KEY = 'user_profile_photo_url';
 
-const ProfileScreen = () => {
+const ProfileScreen = ({ navigation }) => {
   const user = auth.currentUser;
   const [stats, setStats] = useState({
     total: 0,
@@ -36,6 +37,8 @@ const ProfileScreen = () => {
   const [profilePhoto, setProfilePhoto] = useState(null);
   const [photoModalVisible, setPhotoModalVisible] = useState(false);
   const [photoError, setPhotoError] = useState(false);
+  const [userGender, setUserGender] = useState('Belirtmek İstemiyorum');
+  const [topGenres, setTopGenres] = useState([]);
 
   // Kayıtlı fotoğrafı yükle
   useEffect(() => {
@@ -56,14 +59,38 @@ const ProfileScreen = () => {
       q,
       (querySnapshot) => {
         const newStats = { total: 0, Film: 0, Dizi: 0, Anime: 0, 'Kore Dizisi': 0 };
+        const genreCounts = {};
+
         querySnapshot.forEach((doc) => {
           const data = doc.data();
           newStats.total += 1;
           if (data.category && newStats[data.category] !== undefined) {
             newStats[data.category] += 1;
           }
+
+          // Parse genres
+          let itemGenres = [];
+          if (Array.isArray(data.genres)) {
+            itemGenres = data.genres;
+          } else if (typeof data.genre === 'string' && data.genre.trim() !== '') {
+            itemGenres = data.genre.split(', ').map((g) => g.trim());
+          }
+
+          itemGenres.forEach((g) => {
+            if (g) {
+              genreCounts[g] = (genreCounts[g] || 0) + 1;
+            }
+          });
         });
+
+        // Sort and select top 3 genres
+        const sortedGenres = Object.keys(genreCounts)
+          .map((genre) => ({ name: genre, count: genreCounts[genre] }))
+          .sort((a, b) => b.count - a.count)
+          .slice(0, 3);
+
         setStats(newStats);
+        setTopGenres(sortedGenres);
         setLoading(false);
       },
       (error) => {
@@ -73,6 +100,25 @@ const ProfileScreen = () => {
     );
 
     return unsubscribe;
+  }, [user]);
+
+  // Kullanıcı bilgilerini (cinsiyet vb.) Firestore'dan çek
+  useEffect(() => {
+    if (!user) return;
+
+    const userDocRef = doc(db, 'users', user.uid);
+    const unsubscribeUser = onSnapshot(userDocRef, (docSnap) => {
+      if (docSnap.exists()) {
+        const userData = docSnap.data();
+        if (userData.gender) {
+          setUserGender(userData.gender);
+        }
+      }
+    }, (error) => {
+      console.error('Kullanıcı bilgisi çekme hatası:', error);
+    });
+
+    return unsubscribeUser;
   }, [user]);
 
   const handleLogout = async () => {
@@ -135,7 +181,13 @@ const ProfileScreen = () => {
   const getJoinedDate = () => {
     if (!user?.metadata?.creationTime) return 'Yeni Katıldı';
     const date = new Date(user.metadata.creationTime);
-    return date.toLocaleDateString('tr-TR', { year: 'numeric', month: 'long' });
+    return date.toLocaleString('tr-TR', {
+      day: 'numeric',
+      month: 'long',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   const initials = user?.displayName
@@ -151,14 +203,14 @@ const ProfileScreen = () => {
         {/* ── Banner ── */}
         <View style={styles.bannerContainer}>
           <View style={styles.bannerOverlay} />
-          <View style={styles.bannerGlow} />
+          <View style={[styles.bannerGlow, { backgroundColor: colors.primary }]} />
           <Text style={styles.bannerLogoText}>WATCHVAULT</Text>
         </View>
 
         {/* ── Profil Kartı ── */}
-        <View style={styles.profileHeaderCard}>
+        <View style={[styles.profileHeaderCard, { shadowColor: colors.primary }]}>
           <TouchableOpacity onPress={() => setPhotoModalVisible(true)} activeOpacity={0.8} style={styles.avatarWrapper}>
-            <View style={styles.avatarBorderGlow} />
+            <View style={[styles.avatarBorderGlow, { backgroundColor: colors.primary }]} />
             {profilePhoto && !photoError ? (
               <Image
                 source={{ uri: profilePhoto }}
@@ -166,11 +218,11 @@ const ProfileScreen = () => {
                 onError={() => setPhotoError(true)}
               />
             ) : (
-              <View style={styles.avatarCircle}>
+              <View style={[styles.avatarCircle, { backgroundColor: colors.primary }]}>
                 <Text style={styles.avatarText}>{initials}</Text>
               </View>
             )}
-            <View style={styles.cameraBadge}>
+            <View style={[styles.cameraBadge, { backgroundColor: colors.primary }]}>
               <Ionicons name="camera" size={13} color="#fff" />
             </View>
           </TouchableOpacity>
@@ -182,9 +234,75 @@ const ProfileScreen = () => {
             🎬 Sinema, dizi ve anime tutkunu. İzlediğim tüm yapımları ve kişisel incelemelerimi burada arşivliyorum.
           </Text>
 
-          <View style={styles.joinedBadge}>
-            <Ionicons name="calendar-outline" size={14} color={colors.primaryLight} style={{ marginRight: 6 }} />
-            <Text style={styles.joinedText}>Arşive Katılma: {getJoinedDate()}</Text>
+          <View style={styles.badgesRow}>
+            <View style={styles.joinedBadge}>
+              <Ionicons name="calendar-outline" size={14} color={colors.primaryLight} style={{ marginRight: 6 }} />
+              <Text style={styles.joinedText}>Arşive Katılma: {getJoinedDate()}</Text>
+            </View>
+
+            <View style={styles.joinedBadge}>
+              <Ionicons
+                name={
+                  userGender === 'Erkek'
+                    ? 'male-outline'
+                    : userGender === 'Kadın'
+                    ? 'female-outline'
+                    : 'remove-circle-outline'
+                }
+                size={14}
+                color={
+                  userGender === 'Erkek'
+                    ? '#3B82F6'
+                    : userGender === 'Kadın'
+                    ? '#EC4899'
+                    : colors.textSecondary
+                }
+                style={{ marginRight: 6 }}
+              />
+              <Text style={styles.joinedText}>Cinsiyet: {userGender}</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* ── Arayüz Teması ── */}
+        <View style={styles.themeSection}>
+          <Text style={styles.sectionTitle}>Arayüz Teması</Text>
+          <View style={styles.themeCard}>
+            <Text style={styles.themeSubtitle}>
+              Uygulamanın vurgu rengini değiştirmek için aşağıdaki neon renklerden birini seçin:
+            </Text>
+            <View style={styles.themeSelectorRow}>
+              {Object.keys(accentThemes).map((name) => {
+                const themeInfo = accentThemes[name];
+                const isSelected = getThemeName() === name;
+                return (
+                  <TouchableOpacity
+                    key={name}
+                    style={[
+                      styles.themeOptionBtn,
+                      isSelected && { 
+                        borderColor: themeInfo.primary, 
+                        backgroundColor: themeInfo.primary + '12' 
+                      }
+                    ]}
+                    onPress={() => changeTheme(name)}
+                    activeOpacity={0.8}
+                  >
+                    <View style={[styles.themeColorCircle, { backgroundColor: themeInfo.primary }]} />
+                    <Text style={[
+                      styles.themeOptionText, 
+                      isSelected && { color: themeInfo.primary, fontWeight: '800' }
+                    ]}>
+                      {name === 'purple' ? 'Mor' :
+                       name === 'blue' ? 'Mavi' :
+                       name === 'green' ? 'Yeşil' :
+                       name === 'pink' ? 'Pembe' :
+                       name === 'gold' ? 'Altın' : name}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
         </View>
 
@@ -204,7 +322,7 @@ const ProfileScreen = () => {
                     <Text style={styles.totalLabel}>Toplam Yapım</Text>
                     <Text style={styles.totalValue}>{stats.total}</Text>
                   </View>
-                  <View style={styles.totalIconCircle}>
+                  <View style={[styles.totalIconCircle, { backgroundColor: colors.primary + '15', borderColor: colors.primary + '30' }]}>
                     <Ionicons name="film-outline" size={28} color={colors.primaryLight} />
                   </View>
                 </View>
@@ -247,6 +365,112 @@ const ProfileScreen = () => {
           )}
         </View>
 
+        {/* ── İzleme Tercihleri (Tür Analitiği) ── */}
+        {!loading && topGenres.length > 0 && (
+          <View style={styles.genreAnalyticsSection}>
+            <Text style={styles.sectionTitle}>En Çok İzlenen Türler</Text>
+            <View style={styles.genreAnalyticsCard}>
+              <Text style={styles.genreAnalyticsSubtitle}>
+                Arşivinizdeki yapımların tür analizine göre en çok tercih ettiğiniz kategoriler:
+              </Text>
+              
+              {topGenres.map((item, index) => {
+                const genrePercent = stats.total > 0 ? Math.round((item.count / stats.total) * 100) : 0;
+                let genreColor = colors.primaryLight;
+                if (index === 1) genreColor = colors.secondary;
+                if (index === 2) genreColor = colors.accent;
+
+                return (
+                  <View key={item.name} style={styles.genreProgressRow}>
+                    <View style={styles.genreLabelRow}>
+                      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                        <View style={[styles.genreRankCircle, { backgroundColor: genreColor + '20' }]}>
+                          <Text style={[styles.genreRankText, { color: genreColor }]}>{index + 1}</Text>
+                        </View>
+                        <Text style={styles.genreNameText}>{item.name}</Text>
+                      </View>
+                      <Text style={styles.genrePercentText}>
+                        {item.count} Yapım ({genrePercent}%)
+                      </Text>
+                    </View>
+                    <View style={styles.genreProgressBarBg}>
+                      <View
+                        style={[
+                          styles.genreProgressBarFill,
+                          { backgroundColor: genreColor, width: `${genrePercent}%` },
+                        ]}
+                      />
+                    </View>
+                  </View>
+                );
+              })}
+            </View>
+          </View>
+        )}
+
+        {/* ── Destek ve Talep ── */}
+        <View style={styles.supportSection}>
+          <Text style={styles.sectionTitle}>Destek ve Talep</Text>
+
+          <TouchableOpacity
+            style={styles.supportBtn}
+            activeOpacity={0.8}
+            onPress={() =>
+              Linking.openURL('mailto:mtkirbas@gmail.com').catch(() =>
+                Alert.alert('E-posta', 'mtkirbas@gmail.com')
+              )
+            }
+          >
+            <View style={[styles.supportIconWrap, { backgroundColor: colors.primary + '18', borderColor: colors.primary + '35' }]}>
+              <Ionicons name="mail-outline" size={20} color={colors.primaryLight} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.supportLabel}>E-posta ile İletişim</Text>
+              <Text style={[styles.supportValue, { color: colors.primaryLight }]}>mtkirbas@gmail.com</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.supportBtn}
+            activeOpacity={0.8}
+            onPress={() =>
+              Linking.openURL('https://instagram.com/talha_krbs').catch(() =>
+                Alert.alert('Instagram', '@talha_krbs')
+              )
+            }
+          >
+            <View style={[styles.supportIconWrap, { backgroundColor: colors.secondary + '18', borderColor: colors.secondary + '35' }]}>
+              <Ionicons name="logo-instagram" size={20} color={colors.secondary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.supportLabel}>Instagram</Text>
+              <Text style={[styles.supportValue, { color: colors.secondary }]}>@talha_krbs</Text>
+            </View>
+          </TouchableOpacity>
+        </View>
+
+        {/* ── Yönetici Paneli (Sadece Yöneticiye Görünür) ── */}
+        {user?.email === 'mtkirbas@gmail.com' && (
+          <View style={styles.adminSection}>
+            <Text style={styles.sectionTitle}>Sistem Yönetimi</Text>
+            <TouchableOpacity
+              style={[styles.supportBtn, styles.adminBtn, { borderColor: colors.primary + '50' }]}
+              activeOpacity={0.8}
+              onPress={() => navigation.navigate('Admin')}
+            >
+              <View style={[styles.supportIconWrap, styles.adminIconWrap, { backgroundColor: colors.primary + '20', borderColor: colors.primary + '40' }]}>
+                <Ionicons name="shield-checkmark" size={20} color={colors.primaryLight} />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.supportLabel}>Yönetici Paneli</Text>
+                <Text style={styles.supportValue}>İstatistikler ve Üye Yönetimi</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            </TouchableOpacity>
+          </View>
+        )}
+
         {/* ── Oturumu Kapat ── */}
         <CustomButton
           title="Oturumu Kapat"
@@ -265,7 +489,7 @@ const ProfileScreen = () => {
         onRequestClose={() => setPhotoModalVisible(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalCard}>
+          <View style={[styles.modalCard, { shadowColor: colors.primary }]}>
             {/* Başlık */}
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Profil Fotoğrafı</Text>
@@ -279,7 +503,7 @@ const ProfileScreen = () => {
               <View style={styles.currentPhotoRow}>
                 <Image
                   source={{ uri: profilePhoto }}
-                  style={styles.currentPhotoPreview}
+                  style={[styles.currentPhotoPreview, { borderColor: colors.primary }]}
                   onError={() => setPhotoError(true)}
                 />
                 <View style={{ flex: 1 }}>
@@ -291,7 +515,7 @@ const ProfileScreen = () => {
 
             {/* Dosyadan Seç Butonu */}
             <TouchableOpacity style={styles.pickBtn} activeOpacity={0.8} onPress={handlePickImage}>
-              <View style={styles.pickBtnIcon}>
+              <View style={[styles.pickBtnIcon, { backgroundColor: colors.primary + '18', borderColor: colors.primary + '35' }]}>
                 <Ionicons name="image-outline" size={32} color={colors.primaryLight} />
               </View>
               <Text style={styles.pickBtnText}>Galeriden Resim Seç</Text>
@@ -396,11 +620,24 @@ const styles = StyleSheet.create({
     fontSize: 13.5, color: colors.textSecondary, textAlign: 'center',
     marginTop: 12, lineHeight: 19, paddingHorizontal: 15, fontWeight: '500',
   },
+  badgesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+    width: '100%',
+    marginTop: 14,
+  },
   joinedBadge: {
-    flexDirection: 'row', alignItems: 'center',
-    backgroundColor: colors.glassInput, paddingVertical: 6,
-    paddingHorizontal: 12, borderRadius: layout.borderRadius.sm,
-    borderWidth: 1, borderColor: colors.border, marginTop: 14,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.glassInput,
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: layout.borderRadius.sm,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   joinedText: { fontSize: 11.5, color: colors.textSecondary, fontWeight: '700' },
 
@@ -454,8 +691,125 @@ const styles = StyleSheet.create({
   progressBarBg: { height: 6, backgroundColor: colors.glassInput, borderRadius: 3, overflow: 'hidden' },
   progressBarFill: { height: '100%', borderRadius: 3 },
 
+  /* Destek ve Talep */
+  supportSection: {
+    paddingHorizontal: layout.spacing.md,
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  supportBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.glassSurface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: layout.borderRadius.md,
+    padding: layout.spacing.md,
+    marginBottom: layout.spacing.sm,
+    gap: 12,
+    ...Platform.select({ web: { backdropFilter: 'blur(16px)', cursor: 'pointer' } }),
+  },
+  supportIconWrap: {
+    width: 40,
+    height: 40,
+    borderRadius: 12,
+    backgroundColor: colors.primary + '18',
+    borderWidth: 1,
+    borderColor: colors.primary + '35',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  supportLabel: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontWeight: '600',
+    marginBottom: 2,
+  },
+  supportValue: {
+    fontSize: 14,
+    color: colors.primaryLight,
+    fontWeight: '700',
+  },
+
   /* Çıkış */
-  logoutBtn: { marginHorizontal: layout.spacing.md, marginTop: 10, borderRadius: layout.borderRadius.lg },
+  logoutBtn: { marginHorizontal: layout.spacing.md, marginTop: 10, borderRadius: layout.borderRadius.lg, width: 'auto' },
+
+  /* Genre Analytics */
+  genreAnalyticsSection: {
+    paddingHorizontal: layout.spacing.md,
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  genreAnalyticsCard: {
+    backgroundColor: colors.glassSurface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: layout.borderRadius.lg,
+    padding: layout.spacing.md,
+  },
+  genreAnalyticsSubtitle: {
+    fontSize: 12.5,
+    color: colors.textSecondary,
+    marginBottom: 14,
+    lineHeight: 18,
+    fontWeight: '500',
+  },
+  genreProgressRow: {
+    marginBottom: 12,
+  },
+  genreLabelRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  genreRankCircle: {
+    width: 20,
+    height: 20,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  genreRankText: {
+    fontSize: 11,
+    fontWeight: '800',
+  },
+  genreNameText: {
+    fontSize: 13.5,
+    color: colors.text,
+    fontWeight: '700',
+  },
+  genrePercentText: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  genreProgressBarBg: {
+    height: 8,
+    backgroundColor: colors.glassInput,
+    borderRadius: 4,
+    overflow: 'hidden',
+  },
+  genreProgressBarFill: {
+    height: '100%',
+    borderRadius: 4,
+  },
+
+  /* Yönetici Paneli */
+  adminSection: {
+    paddingHorizontal: layout.spacing.md,
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  adminBtn: {
+    borderColor: colors.primary + '50',
+    backgroundColor: colors.surfaceLight + '30',
+  },
+  adminIconWrap: {
+    backgroundColor: colors.primary + '20',
+    borderColor: colors.primary + '40',
+  },
 
   /* Modal */
   modalOverlay: {
@@ -513,6 +867,61 @@ const styles = StyleSheet.create({
     borderWidth: 1, borderColor: 'rgba(255,107,107,0.25)',
   },
   removeBtnText: { color: '#ff6b6b', fontWeight: '700', fontSize: 13.5 },
+
+  /* Tema Seçici */
+  themeSection: {
+    paddingHorizontal: layout.spacing.md,
+    marginTop: 4,
+    marginBottom: 4,
+  },
+  themeCard: {
+    backgroundColor: colors.glassSurface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: layout.borderRadius.lg,
+    padding: layout.spacing.md,
+    ...Platform.select({ web: { backdropFilter: 'blur(16px)' } }),
+  },
+  themeSubtitle: {
+    fontSize: 12.5,
+    color: colors.textSecondary,
+    marginBottom: 14,
+    lineHeight: 18,
+    fontWeight: '500',
+  },
+  themeSelectorRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 8,
+    flexWrap: 'wrap',
+  },
+  themeOptionBtn: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    paddingHorizontal: 8,
+    borderRadius: layout.borderRadius.md,
+    borderWidth: 2,
+    borderColor: 'transparent',
+    backgroundColor: colors.glassInput,
+    flex: 1,
+    minWidth: 55,
+    ...Platform.select({ web: { cursor: 'pointer', transition: 'all 0.2s ease' } }),
+  },
+  themeColorCircle: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    marginBottom: 6,
+    ...layout.shadows.sm,
+  },
+  themeOptionText: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
 });
 
 export default ProfileScreen;

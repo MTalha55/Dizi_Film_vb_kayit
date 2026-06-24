@@ -16,6 +16,8 @@ import ListScreen from '../screens/ListScreen';
 import AddScreen from '../screens/AddScreen';
 import DetailScreen from '../screens/DetailScreen';
 import ProfileScreen from '../screens/ProfileScreen';
+import PrivacyPolicyScreen from '../screens/PrivacyPolicyScreen';
+import AdminScreen from '../screens/AdminScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -38,22 +40,14 @@ const MyTheme = {
 const AuthStack = () => (
   <Stack.Navigator
     screenOptions={{
-      headerShown: false, // Web platformunda çökmeyi önlemek için yerel başlıkları kapatıyoruz
+      headerShown: false,
       contentStyle: { backgroundColor: colors.background }
     }}
   >
-    <Stack.Screen 
-      name="Welcome" 
-      component={WelcomeScreen} 
-    />
-    <Stack.Screen 
-      name="Login" 
-      component={LoginScreen} 
-    />
-    <Stack.Screen 
-      name="Register" 
-      component={RegisterScreen} 
-    />
+    <Stack.Screen name="Welcome" component={WelcomeScreen} />
+    <Stack.Screen name="Login" component={LoginScreen} />
+    <Stack.Screen name="Register" component={RegisterScreen} />
+    <Stack.Screen name="PrivacyPolicy" component={PrivacyPolicyScreen} />
   </Stack.Navigator>
 );
 
@@ -145,10 +139,14 @@ const AppStack = () => (
       name="Detail" 
       component={DetailScreen} 
     />
+    <Stack.Screen 
+      name="Admin" 
+      component={AdminScreen} 
+    />
   </Stack.Navigator>
 );
 
-// Ana Yönlendirici (Auth state'e göre AuthStack veya AppStack gösterir)
+// Ana Yönlendirici
 const AppNavigator = () => {
   const [user, setUser] = useState(null);
   const [initializing, setInitializing] = useState(true);
@@ -158,7 +156,6 @@ const AppNavigator = () => {
       setUser(currentUser);
       if (initializing) setInitializing(false);
     });
-
     return unsubscribe;
   }, []);
 
