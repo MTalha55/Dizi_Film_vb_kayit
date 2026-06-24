@@ -22,6 +22,7 @@ const ListScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Hepsi');
+  const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
 
   const categories = ['Hepsi', 'Film', 'Dizi', 'Anime', 'Kore Dizisi'];
 
@@ -91,13 +92,14 @@ const ListScreen = ({ navigation }) => {
   const filteredRecords = records.filter(item => {
     const matchesCategory = selectedCategory === 'Hepsi' || item.category === selectedCategory;
     const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
+    const matchesFavorite = !showFavoritesOnly || item.isFavorite === true;
+    return matchesCategory && matchesSearch && matchesFavorite;
   });
 
   return (
     <View style={styles.container}>
       {/* Ambient Glow */}
-      <View style={styles.ambientGlow} />
+      <View style={[styles.ambientGlow, { backgroundColor: colors.primary }]} />
 
       {/* Karşılama Başlığı */}
       <View style={styles.welcomeHeader}>
@@ -106,7 +108,7 @@ const ListScreen = ({ navigation }) => {
           <Text style={styles.welcomeSubtitle}>Kişisel sinema arşivini buradan yönetebilirsin.</Text>
         </View>
         <TouchableOpacity 
-          style={styles.avatarButton} 
+          style={[styles.avatarButton, { backgroundColor: colors.primary }]} 
           onPress={() => navigation.navigate('Profile')}
           activeOpacity={0.8}
         >
@@ -116,21 +118,38 @@ const ListScreen = ({ navigation }) => {
         </TouchableOpacity>
       </View>
 
-      {/* Arama Barı */}
-      <View style={styles.searchContainer}>
-        <Ionicons name="search-outline" size={18} color={colors.textSecondary} style={styles.searchIcon} />
-        <TextInput
-          placeholder="İzlediklerinizde arayın..."
-          placeholderTextColor={colors.textMuted}
-          value={searchQuery}
-          onChangeText={setSearchQuery}
-          style={[styles.searchInput, { outlineStyle: 'none' }]}
-        />
-        {searchQuery.length > 0 && (
-          <TouchableOpacity onPress={() => setSearchQuery('')}>
-            <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
-          </TouchableOpacity>
-        )}
+      {/* Arama Barı ve Favori Filtresi */}
+      <View style={styles.searchRow}>
+        <View style={styles.searchContainer}>
+          <Ionicons name="search-outline" size={18} color={colors.textSecondary} style={styles.searchIcon} />
+          <TextInput
+            placeholder="İzlediklerinizde arayın..."
+            placeholderTextColor={colors.textMuted}
+            value={searchQuery}
+            onChangeText={setSearchQuery}
+            style={[styles.searchInput, { outlineStyle: 'none' }]}
+          />
+          {searchQuery.length > 0 && (
+            <TouchableOpacity onPress={() => setSearchQuery('')}>
+              <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
+            </TouchableOpacity>
+          )}
+        </View>
+
+        <TouchableOpacity
+          onPress={() => setShowFavoritesOnly(!showFavoritesOnly)}
+          style={[
+            styles.favFilterBtn,
+            showFavoritesOnly && styles.favFilterBtnActive
+          ]}
+          activeOpacity={0.8}
+        >
+          <Ionicons
+            name={showFavoritesOnly ? "star" : "star-outline"}
+            size={20}
+            color={showFavoritesOnly ? colors.accent : colors.textSecondary}
+          />
+        </TouchableOpacity>
       </View>
 
       {/* Kategori Filtre Butonları */}
@@ -149,7 +168,7 @@ const ListScreen = ({ navigation }) => {
                 style={[
                   styles.categoryBtn,
                   isSelected && styles.categoryBtnActive,
-                  isSelected && { borderColor: colors.primaryLight }
+                  isSelected && { backgroundColor: colors.primary, borderColor: colors.primaryLight }
                 ]}
                 activeOpacity={0.85}
               >
@@ -172,7 +191,7 @@ const ListScreen = ({ navigation }) => {
         </View>
       ) : filteredRecords.length === 0 ? (
         <View style={styles.centerContainer}>
-          <View style={styles.emptyIconCircle}>
+          <View style={[styles.emptyIconCircle, { backgroundColor: colors.primary + '15' }]}>
             <Ionicons name="film-outline" size={54} color={colors.primaryLight} />
           </View>
           <Text style={styles.emptyText}>Henüz hiç kayıt eklememişsiniz.</Text>
@@ -183,7 +202,7 @@ const ListScreen = ({ navigation }) => {
           </Text>
           {selectedCategory === 'Hepsi' && searchQuery === '' && (
             <TouchableOpacity 
-              style={styles.addBtn}
+              style={[styles.addBtn, { backgroundColor: colors.primary, shadowColor: colors.primary }]}
               onPress={() => navigation.navigate('Add')}
               activeOpacity={0.8}
             >
@@ -223,6 +242,13 @@ const styles = StyleSheet.native || StyleSheet.create({
       }
     })
   },
+  searchRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: layout.spacing.md,
+    marginVertical: layout.spacing.sm,
+    gap: 10,
+  },
   searchContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -230,8 +256,7 @@ const styles = StyleSheet.native || StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     borderRadius: layout.borderRadius.round,
-    marginHorizontal: layout.spacing.md,
-    marginVertical: layout.spacing.sm,
+    flex: 1,
     paddingHorizontal: layout.spacing.md,
     height: 46,
     ...Platform.select({
@@ -317,12 +342,25 @@ const styles = StyleSheet.native || StyleSheet.create({
     textAlign: 'center',
   },
   emptySubtext: {
-    fontSize: 13.5,
     color: colors.textSecondary,
     textAlign: 'center',
-    marginTop: 8,
-    maxWidth: 290,
-    lineHeight: 20,
+    marginTop: 12,
+    fontSize: 14,
+  },
+  favFilterBtn: {
+    width: 46,
+    height: 46,
+    borderRadius: 23,
+    backgroundColor: colors.glassInput,
+    borderWidth: 1,
+    borderColor: colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({ web: { cursor: 'pointer' } }),
+  },
+  favFilterBtnActive: {
+    backgroundColor: colors.accent + '15',
+    borderColor: colors.accent,
   },
   addBtn: {
     backgroundColor: colors.primary,

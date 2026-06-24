@@ -8,26 +8,26 @@ const WelcomeScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       {/* Ambient Glows */}
-      <View style={styles.glowTop} />
+      <View style={[styles.glowTop, { backgroundColor: colors.primary }]} />
       <View style={styles.glowBottom} />
 
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
         <View style={styles.content}>
           {/* Glow Logo */}
           <View style={styles.logoContainer}>
-            <View style={styles.logoGlow} />
+            <View style={[styles.logoGlow, { backgroundColor: colors.primary }]} />
             <View style={styles.logoGlowOuter} />
-            <View style={styles.logoCircle}>
+            <View style={[styles.logoCircle, { shadowColor: colors.primary }]}>
               <Ionicons name="film" size={54} color={colors.primaryLight} />
             </View>
           </View>
 
           {/* Başlık ve Slogan */}
           <View style={styles.titleContainer}>
-            <Text style={styles.title}>
+            <Text style={[styles.title, Platform.OS === 'web' && { textShadow: `0 0 20px ${colors.primary}30` }]}>
               Watch<Text style={{ color: colors.secondary }}>Vault</Text>
             </Text>
-            <Text style={styles.subtitle}>
+            <Text style={[styles.subtitle, { color: colors.primaryLight }]}>
               Kişisel Sinematik Arşiviniz
             </Text>
             <Text style={styles.description}>

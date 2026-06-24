@@ -26,6 +26,9 @@ const AddScreen = ({ navigation }) => {
   const [imageUrl, setImageUrl] = useState('');
   const [notes, setNotes] = useState('');
   const [selectedGenres, setSelectedGenres] = useState([]);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [season, setSeason] = useState(1);
+  const [episode, setEpisode] = useState(1);
 
   const availableGenres = [
     'Aksiyon', 'Komedi', 'Dram', 'Korku', 
@@ -75,6 +78,7 @@ const AddScreen = ({ navigation }) => {
     setLoading(true);
     try {
       // Firestore'a kayıt ekle
+      const isShow = category === 'Dizi' || category === 'Anime';
       await addDoc(collection(db, "records"), {
         userId: auth.currentUser.uid,
         title: title.trim(),
@@ -85,6 +89,9 @@ const AddScreen = ({ navigation }) => {
         notes: notes.trim(),
         genres: selectedGenres,
         genre: selectedGenres.join(', '),
+        isFavorite,
+        season: isShow ? Number(season) : 0,
+        episode: isShow ? Number(episode) : 0,
         createdAt: new Date().toISOString()
       });
 
@@ -99,6 +106,9 @@ const AddScreen = ({ navigation }) => {
       setImageUrl('');
       setNotes('');
       setSelectedGenres([]);
+      setIsFavorite(false);
+      setSeason(1);
+      setEpisode(1);
 
       // Listeleme sayfasına geri yönlendir
       navigation.navigate('List');
@@ -166,13 +176,19 @@ const AddScreen = ({ navigation }) => {
                       onPress={() => toggleGenre(g)}
                       style={[
                         styles.genrePill,
-                        isSelected && styles.genrePillActive
+                        isSelected && styles.genrePillActive,
+                        isSelected && {
+                          backgroundColor: colors.primary + '18',
+                          borderColor: colors.primaryLight,
+                          ...(Platform.OS === 'web' && { boxShadow: `0 0 8px ${colors.primary}20` })
+                        }
                       ]}
                       activeOpacity={0.7}
                     >
                       <Text style={[
                         styles.genrePillText,
-                        isSelected && styles.genrePillTextActive
+                        isSelected && styles.genrePillTextActive,
+                        isSelected && { color: colors.primaryLight }
                       ]}>
                         {g}
                       </Text>
@@ -243,6 +259,56 @@ const AddScreen = ({ navigation }) => {
               </View>
             </View>
 
+            {/* Dizi/Anime İlerleme Durumu */}
+            {(category === 'Dizi' || category === 'Anime') && (
+              <View style={styles.fieldContainer}>
+                <Text style={styles.label}>İlerleme Durumu</Text>
+                <View style={styles.trackerRow}>
+                  <View style={styles.trackerItem}>
+                    <Text style={styles.trackerSublabel}>Sezon</Text>
+                    <View style={styles.trackerControls}>
+                      <TouchableOpacity
+                        style={styles.trackerBtn}
+                        onPress={() => setSeason(Math.max(1, season - 1))}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="remove" size={16} color={colors.text} />
+                      </TouchableOpacity>
+                      <Text style={styles.trackerVal}>{season}</Text>
+                      <TouchableOpacity
+                        style={styles.trackerBtn}
+                        onPress={() => setSeason(season + 1)}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="add" size={16} color={colors.text} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+
+                  <View style={styles.trackerItem}>
+                    <Text style={styles.trackerSublabel}>Bölüm</Text>
+                    <View style={styles.trackerControls}>
+                      <TouchableOpacity
+                        style={styles.trackerBtn}
+                        onPress={() => setEpisode(Math.max(1, episode - 1))}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="remove" size={16} color={colors.text} />
+                      </TouchableOpacity>
+                      <Text style={styles.trackerVal}>{episode}</Text>
+                      <TouchableOpacity
+                        style={styles.trackerBtn}
+                        onPress={() => setEpisode(episode + 1)}
+                        activeOpacity={0.7}
+                      >
+                        <Ionicons name="add" size={16} color={colors.text} />
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            )}
+
             {/* Puan Değerlendirmesi */}
             <View style={styles.fieldContainer}>
               <Text style={styles.label}>Kişisel Puanım ({rating}/5)</Text>
@@ -262,9 +328,9 @@ const AddScreen = ({ navigation }) => {
             {imageUrl.trim().startsWith('http') && (
               <View style={styles.previewContainer}>
                 <Text style={styles.previewLabel}>Afiş Önizleme</Text>
-                <Image
+                 <Image
                   source={{ uri: imageUrl }}
-                  style={styles.previewImage}
+                  style={[styles.previewImage, { shadowColor: colors.primary }]}
                   resizeMode="cover"
                   onError={() => console.log("Görsel yüklenemedi")}
                 />
@@ -282,6 +348,21 @@ const AddScreen = ({ navigation }) => {
               numberOfLines={4}
               style={styles.multilineInput}
             />
+
+            {/* Favori Seçeneği */}
+            <TouchableOpacity
+              style={styles.favToggleRow}
+              activeOpacity={0.8}
+              onPress={() => setIsFavorite(!isFavorite)}
+            >
+              <View style={[styles.favCheckbox, isFavorite && styles.favCheckboxChecked]}>
+                {isFavorite && <Ionicons name="star" size={12} color="#fff" />}
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.favToggleLabel}>Bu Yapımı Favorilerime Ekle</Text>
+                <Text style={styles.favToggleDesc}>Listemin favoriler bölümünde öncelikli listelenecektir.</Text>
+              </View>
+            </TouchableOpacity>
 
             {/* Kaydet Butonu */}
             <CustomButton
@@ -447,6 +528,92 @@ const styles = StyleSheet.native || StyleSheet.create({
   genrePillTextActive: {
     color: colors.primaryLight,
     fontWeight: '800',
+  },
+
+  /* İlerleme Durumu / Tracker */
+  trackerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginTop: 4,
+  },
+  trackerItem: {
+    flex: 1,
+    backgroundColor: colors.glassInput,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: layout.borderRadius.sm,
+    padding: 10,
+    alignItems: 'center',
+  },
+  trackerSublabel: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    fontWeight: '700',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+  },
+  trackerControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 14,
+  },
+  trackerBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.surfaceLight,
+    borderWidth: 1,
+    borderColor: colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({ web: { cursor: 'pointer' } }),
+  },
+  trackerVal: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: colors.text,
+    minWidth: 20,
+    textAlign: 'center',
+  },
+
+  /* Favori */
+  favToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.glassInput,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: layout.borderRadius.sm,
+    padding: 12,
+    marginTop: layout.spacing.sm,
+    gap: 12,
+    ...Platform.select({ web: { cursor: 'pointer' } }),
+  },
+  favCheckbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: colors.textSecondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  favCheckboxChecked: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  favToggleLabel: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  favToggleDesc: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 2,
   }
 });
 

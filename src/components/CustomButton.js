@@ -43,6 +43,8 @@ const CustomButton = ({
       disabled={disabled || loading}
       style={[
         getButtonStyle(),
+        variant === 'primary' && { backgroundColor: colors.primary },
+        variant === 'outline' && { borderColor: colors.primaryLight },
         (disabled || loading) && styles.disabledBtn,
         style
       ]}

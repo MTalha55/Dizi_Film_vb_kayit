@@ -49,7 +49,12 @@ const RecordCard = ({ item, onView, onEdit, onDelete }) => {
     <View 
       style={[
         styles.card,
-        isHovered && Platform.OS === 'web' && styles.cardHovered
+        isHovered && Platform.OS === 'web' && styles.cardHovered,
+        isHovered && {
+          borderColor: colors.primaryLight,
+          shadowColor: colors.primary,
+          ...(Platform.OS === 'web' && { boxShadow: `0 8px 24px ${colors.primary}25` })
+        }
       ]}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
@@ -88,6 +93,13 @@ const RecordCard = ({ item, onView, onEdit, onDelete }) => {
                 {category}
               </Text>
             </View>
+
+            {/* Favori Rozeti */}
+            {item.isFavorite && (
+              <View style={[styles.badge, { backgroundColor: colors.accent + '15', borderColor: colors.accent + '60', paddingHorizontal: 4, flexDirection: 'row', alignItems: 'center' }]}>
+                <Ionicons name="star" size={8} color={colors.accent} />
+              </View>
+            )}
             
             {/* İzleme Durumu Rozeti */}
             <View style={[styles.statusBadge, { backgroundColor: statusInfo.color + '08', borderColor: statusInfo.color + '35' }]}>

@@ -35,6 +35,9 @@ const DetailScreen = ({ route, navigation }) => {
   const [imageUrl, setImageUrl] = useState('');
   const [notes, setNotes] = useState('');
   const [selectedGenres, setSelectedGenres] = useState([]);
+  const [isFavorite, setIsFavorite] = useState(false);
+  const [season, setSeason] = useState(1);
+  const [episode, setEpisode] = useState(1);
   const [error, setError] = useState('');
 
   const availableGenres = [
@@ -79,6 +82,9 @@ const DetailScreen = ({ route, navigation }) => {
         setRating(data.rating);
         setImageUrl(data.imageUrl || '');
         setNotes(data.notes || '');
+        setIsFavorite(data.isFavorite || false);
+        setSeason(data.season || 0);
+        setEpisode(data.episode || 0);
         if (Array.isArray(data.genres)) {
           setSelectedGenres(data.genres);
         } else if (typeof data.genre === 'string') {
@@ -100,6 +106,44 @@ const DetailScreen = ({ route, navigation }) => {
     return unsubscribe;
   }, [id]);
 
+  const toggleFavoriteQuick = async () => {
+    if (!record) return;
+    try {
+      const docRef = doc(db, "records", id);
+      await updateDoc(docRef, {
+        isFavorite: !record.isFavorite
+      });
+    } catch (err) {
+      console.error("Favori güncellenemedi:", err);
+    }
+  };
+
+  const updateSeasonQuick = async (amount) => {
+    if (!record) return;
+    const newSeason = Math.max(1, (record.season || 1) + amount);
+    try {
+      const docRef = doc(db, "records", id);
+      await updateDoc(docRef, {
+        season: newSeason
+      });
+    } catch (err) {
+      console.error("Sezon güncellenemedi:", err);
+    }
+  };
+
+  const updateEpisodeQuick = async (amount) => {
+    if (!record) return;
+    const newEpisode = Math.max(1, (record.episode || 1) + amount);
+    try {
+      const docRef = doc(db, "records", id);
+      await updateDoc(docRef, {
+        episode: newEpisode
+      });
+    } catch (err) {
+      console.error("Bölüm güncellenemedi:", err);
+    }
+  };
+
   const handleUpdate = async () => {
     if (!title.trim()) {
       setError('Yapım adı alanı zorunludur.');
@@ -118,6 +162,9 @@ const DetailScreen = ({ route, navigation }) => {
         notes: notes.trim(),
         genres: selectedGenres,
         genre: selectedGenres.join(', '),
+        isFavorite,
+        season: (category === 'Dizi' || category === 'Anime') ? Number(season) : 0,
+        episode: (category === 'Dizi' || category === 'Anime') ? Number(episode) : 0,
         updatedAt: new Date().toISOString()
       });
       setSaving(false);
@@ -240,7 +287,21 @@ const DetailScreen = ({ route, navigation }) => {
             <Text style={styles.customHeaderTitle}>
               {isEditing ? 'Yapımı Düzenle' : 'Yapım Detayları'}
             </Text>
-            <View style={{ width: 24 }} />
+            {record && !isEditing ? (
+              <TouchableOpacity
+                onPress={toggleFavoriteQuick}
+                style={styles.headerFavBtn}
+                activeOpacity={0.7}
+              >
+                <Ionicons
+                  name={record.isFavorite ? 'star' : 'star-outline'}
+                  size={24}
+                  color={record.isFavorite ? colors.accent : colors.textSecondary}
+                />
+              </TouchableOpacity>
+            ) : (
+              <View style={{ width: 24 }} />
+            )}
           </View>
 
           {isEditing ? (
@@ -271,12 +332,18 @@ const DetailScreen = ({ route, navigation }) => {
                         onPress={() => toggleGenre(g)}
                         style={[
                           styles.genrePill,
-                          isSelected && styles.genrePillActive
+                          isSelected && styles.genrePillActive,
+                          isSelected && {
+                            backgroundColor: colors.primary + '18',
+                            borderColor: colors.primaryLight,
+                            ...(Platform.OS === 'web' && { boxShadow: `0 0 8px ${colors.primary}20` })
+                          }
                         ]}
                       >
                         <Text style={[
                           styles.genrePillText,
-                          isSelected && styles.genrePillTextActive
+                          isSelected && styles.genrePillTextActive,
+                          isSelected && { color: colors.primaryLight }
                         ]}>
                           {g}
                         </Text>
@@ -342,6 +409,56 @@ const DetailScreen = ({ route, navigation }) => {
                 </View>
               </View>
 
+              {/* Dizi/Anime İlerleme Durumu */}
+              {(category === 'Dizi' || category === 'Anime') && (
+                <View style={styles.fieldContainer}>
+                  <Text style={styles.label}>İlerleme Durumu</Text>
+                  <View style={styles.trackerRow}>
+                    <View style={styles.trackerItem}>
+                      <Text style={styles.trackerSublabel}>Sezon</Text>
+                      <View style={styles.trackerControls}>
+                        <TouchableOpacity
+                          style={styles.trackerBtn}
+                          onPress={() => setSeason(Math.max(1, season - 1))}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="remove" size={16} color={colors.text} />
+                        </TouchableOpacity>
+                        <Text style={styles.trackerVal}>{season}</Text>
+                        <TouchableOpacity
+                          style={styles.trackerBtn}
+                          onPress={() => setSeason(season + 1)}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="add" size={16} color={colors.text} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+
+                    <View style={styles.trackerItem}>
+                      <Text style={styles.trackerSublabel}>Bölüm</Text>
+                      <View style={styles.trackerControls}>
+                        <TouchableOpacity
+                          style={styles.trackerBtn}
+                          onPress={() => setEpisode(Math.max(1, episode - 1))}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="remove" size={16} color={colors.text} />
+                        </TouchableOpacity>
+                        <Text style={styles.trackerVal}>{episode}</Text>
+                        <TouchableOpacity
+                          style={styles.trackerBtn}
+                          onPress={() => setEpisode(episode + 1)}
+                          activeOpacity={0.7}
+                        >
+                          <Ionicons name="add" size={16} color={colors.text} />
+                        </TouchableOpacity>
+                      </View>
+                    </View>
+                  </View>
+                </View>
+              )}
+
               {/* Puan */}
               <View style={styles.fieldContainer}>
                 <Text style={styles.label}>Kişisel Puanım ({rating}/5)</Text>
@@ -358,7 +475,7 @@ const DetailScreen = ({ route, navigation }) => {
 
               {imageUrl.trim().startsWith('http') && (
                 <View style={styles.previewContainer}>
-                  <Image source={{ uri: imageUrl }} style={styles.previewImage} resizeMode="cover" />
+                  <Image source={{ uri: imageUrl }} style={[styles.previewImage, { shadowColor: colors.primary }]} resizeMode="cover" />
                 </View>
               )}
 
@@ -372,6 +489,21 @@ const DetailScreen = ({ route, navigation }) => {
                 numberOfLines={4}
                 style={styles.multilineInput}
               />
+
+              {/* Favori Seçeneği */}
+              <TouchableOpacity
+                style={styles.favToggleRow}
+                activeOpacity={0.8}
+                onPress={() => setIsFavorite(!isFavorite)}
+              >
+                <View style={[styles.favCheckbox, isFavorite && styles.favCheckboxChecked]}>
+                  {isFavorite && <Ionicons name="star" size={12} color="#fff" />}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.favToggleLabel}>Bu Yapımı Favorilerime Ekle</Text>
+                  <Text style={styles.favToggleDesc}>Listemin favoriler bölümünde öncelikli listelenecektir.</Text>
+                </View>
+              </TouchableOpacity>
 
               {/* Kaydet ve İptal Butonları */}
               <View style={styles.buttonRow}>
@@ -393,7 +525,7 @@ const DetailScreen = ({ route, navigation }) => {
             /* GÖRÜNTÜLEME MODU */
             <View style={styles.detailsContainer}>
               {/* Afiş Alanı */}
-              <View style={styles.bannerContainer}>
+              <View style={[styles.bannerContainer, { shadowColor: colors.primary }]}>
                 {record.imageUrl && record.imageUrl.trim().startsWith('http') ? (
                   <Image source={{ uri: record.imageUrl }} style={styles.bannerImage} resizeMode="cover" />
                 ) : (
@@ -406,7 +538,7 @@ const DetailScreen = ({ route, navigation }) => {
                       } 
                       size={80} 
                       color={getCategoryColor(record.category)} 
-                    />
+                      />
                   </View>
                 )}
               </View>
@@ -431,6 +563,56 @@ const DetailScreen = ({ route, navigation }) => {
 
                 {/* Yapım Adı */}
                 <Text style={styles.detailTitle}>{record.title}</Text>
+
+                {/* Dizi/Anime İlerleme Durumu Hızlı Takip */}
+                {(record.category === 'Dizi' || record.category === 'Anime') && (
+                  <View style={styles.quickTrackerContainer}>
+                    <Text style={[styles.quickTrackerTitle, { color: colors.primaryLight }]}>İzleme İlerlemesi</Text>
+                    <View style={styles.quickTrackerRow}>
+                      <View style={styles.quickTrackerItem}>
+                        <Text style={styles.quickTrackerLabel}>Sezon</Text>
+                        <View style={styles.quickTrackerControls}>
+                          <TouchableOpacity
+                            style={styles.quickTrackerBtn}
+                            onPress={() => updateSeasonQuick(-1)}
+                            activeOpacity={0.7}
+                          >
+                            <Ionicons name="remove-circle-outline" size={20} color={colors.textSecondary} />
+                          </TouchableOpacity>
+                          <Text style={styles.quickTrackerVal}>{record.season || 1}</Text>
+                          <TouchableOpacity
+                            style={styles.quickTrackerBtn}
+                            onPress={() => updateSeasonQuick(1)}
+                            activeOpacity={0.7}
+                          >
+                            <Ionicons name="add-circle-outline" size={20} color={colors.primaryLight} />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+
+                      <View style={styles.quickTrackerItem}>
+                        <Text style={styles.quickTrackerLabel}>Bölüm</Text>
+                        <View style={styles.quickTrackerControls}>
+                          <TouchableOpacity
+                            style={styles.quickTrackerBtn}
+                            onPress={() => updateEpisodeQuick(-1)}
+                            activeOpacity={0.7}
+                          >
+                            <Ionicons name="remove-circle-outline" size={20} color={colors.textSecondary} />
+                          </TouchableOpacity>
+                          <Text style={styles.quickTrackerVal}>{record.episode || 1}</Text>
+                          <TouchableOpacity
+                            style={styles.quickTrackerBtn}
+                            onPress={() => updateEpisodeQuick(1)}
+                            activeOpacity={0.7}
+                          >
+                            <Ionicons name="add-circle-outline" size={20} color={colors.primaryLight} />
+                          </TouchableOpacity>
+                        </View>
+                      </View>
+                    </View>
+                  </View>
+                )}
 
                 {/* Yıldız Değerlendirmesi */}
                 <View style={styles.ratingSection}>
@@ -778,6 +960,157 @@ const styles = StyleSheet.native || StyleSheet.create({
   genrePillTextActive: {
     color: colors.primaryLight,
     fontWeight: '800',
+  },
+
+  /* Favori Butonu Header */
+  headerFavBtn: {
+    padding: 4,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({ web: { cursor: 'pointer' } }),
+  },
+
+  /* İlerleme Durumu / Tracker */
+  trackerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    marginTop: 4,
+  },
+  trackerItem: {
+    flex: 1,
+    backgroundColor: colors.glassInput,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: layout.borderRadius.sm,
+    padding: 10,
+    alignItems: 'center',
+  },
+  trackerSublabel: {
+    fontSize: 11,
+    color: colors.textSecondary,
+    fontWeight: '700',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+  },
+  trackerControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 14,
+  },
+  trackerBtn: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: colors.surfaceLight,
+    borderWidth: 1,
+    borderColor: colors.border,
+    justifyContent: 'center',
+    alignItems: 'center',
+    ...Platform.select({ web: { cursor: 'pointer' } }),
+  },
+  trackerVal: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: colors.text,
+    minWidth: 20,
+    textAlign: 'center',
+  },
+
+  /* Favori Seçeneği Form */
+  favToggleRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.glassInput,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: layout.borderRadius.sm,
+    padding: 12,
+    marginTop: layout.spacing.sm,
+    gap: 12,
+    ...Platform.select({ web: { cursor: 'pointer' } }),
+  },
+  favCheckbox: {
+    width: 22,
+    height: 22,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: colors.textSecondary,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'transparent',
+  },
+  favCheckboxChecked: {
+    backgroundColor: colors.accent,
+    borderColor: colors.accent,
+  },
+  favToggleLabel: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: colors.text,
+  },
+  favToggleDesc: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginTop: 2,
+  },
+
+  /* Detay Sayfası İlerleme Takibi (Görüntüleme Modu) */
+  quickTrackerContainer: {
+    backgroundColor: colors.glassInput,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: layout.borderRadius.md,
+    padding: 14,
+    marginTop: 14,
+    marginBottom: 8,
+  },
+  quickTrackerTitle: {
+    fontSize: 12.5,
+    fontWeight: '800',
+    color: colors.primaryLight,
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  quickTrackerRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 16,
+  },
+  quickTrackerItem: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surfaceLight + '50',
+    borderRadius: layout.borderRadius.sm,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderWidth: 1,
+    borderColor: colors.border + '60',
+  },
+  quickTrackerLabel: {
+    fontSize: 12,
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  quickTrackerControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  quickTrackerBtn: {
+    padding: 2,
+    ...Platform.select({ web: { cursor: 'pointer' } }),
+  },
+  quickTrackerVal: {
+    fontSize: 14.5,
+    fontWeight: 'bold',
+    color: colors.text,
+    minWidth: 16,
+    textAlign: 'center',
   }
 });
 

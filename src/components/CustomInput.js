@@ -1,43 +1,63 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, forwardRef } from 'react';
 import { StyleSheet, Text, TextInput, View, TouchableOpacity, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, layout } from '../theme/colors';
 
-const CustomInput = ({
-  label,
-  value,
-  onChangeText,
-  placeholder,
-  secureTextEntry = false,
-  error,
-  iconName,
-  keyboardType = 'default',
-  autoCapitalize = 'none',
-  style,
-  ...props
-}) => {
+const CustomInput = forwardRef((
+  {
+    label,
+    value,
+    onChangeText,
+    placeholder,
+    secureTextEntry = false,
+    error,
+    iconName,
+    keyboardType = 'default',
+    autoCapitalize = 'none',
+    autoComplete,
+    returnKeyType,
+    onSubmitEditing,
+    style,
+    ...props
+  },
+  ref
+) => {
   const [isFocused, setIsFocused] = useState(false);
   const [hidePassword, setHidePassword] = useState(true);
+  const inputRef = useRef(null);
+
+  // Dışarıdan ref gelmişse onu, yoksa kendi internal ref'imizi kullanalım
+  const resolvedRef = ref || inputRef;
 
   return (
     <View style={[styles.container, style]}>
       {label && <Text style={styles.label}>{label}</Text>}
-      
-      <View style={[
-        styles.inputContainer,
-        isFocused && styles.inputFocused,
-        error && styles.inputError
-      ]}>
+
+      <TouchableOpacity
+        activeOpacity={1}
+        onPress={() => resolvedRef?.current?.focus()}
+        style={[
+          styles.inputContainer,
+          isFocused && styles.inputFocused,
+          isFocused && { 
+            borderColor: colors.primaryLight,
+            shadowColor: colors.primary,
+            ...(Platform.OS === 'web' && { boxShadow: `0 0 10px ${colors.primary}30` })
+          },
+          error && styles.inputError,
+        ]}
+      >
         {iconName && (
-          <Ionicons 
-            name={iconName} 
-            size={20} 
-            color={error ? colors.danger : isFocused ? colors.primary : colors.textSecondary} 
+          <Ionicons
+            name={iconName}
+            size={20}
+            color={error ? colors.danger : isFocused ? colors.primary : colors.textSecondary}
             style={styles.icon}
           />
         )}
-        
+
         <TextInput
+          ref={resolvedRef}
           value={value}
           onChangeText={onChangeText}
           placeholder={placeholder}
@@ -45,30 +65,36 @@ const CustomInput = ({
           secureTextEntry={secureTextEntry && hidePassword}
           keyboardType={keyboardType}
           autoCapitalize={autoCapitalize}
-          style={[styles.input, { outlineStyle: 'none' }]} // outlineStyle removes default web input borders
+          autoCorrect={false}
+          autoComplete={autoComplete}
+          returnKeyType={returnKeyType}
+          onSubmitEditing={onSubmitEditing}
+          blurOnSubmit={!onSubmitEditing}
+          style={[styles.input, { outlineStyle: 'none' }]}
           onFocus={() => setIsFocused(true)}
           onBlur={() => setIsFocused(false)}
           {...props}
         />
 
         {secureTextEntry && (
-          <TouchableOpacity 
+          <TouchableOpacity
             onPress={() => setHidePassword(!hidePassword)}
             style={styles.eyeIcon}
+            hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
           >
-            <Ionicons 
-              name={hidePassword ? 'eye-off-outline' : 'eye-outline'} 
-              size={20} 
-              color={colors.textSecondary} 
+            <Ionicons
+              name={hidePassword ? 'eye-off-outline' : 'eye-outline'}
+              size={20}
+              color={colors.textSecondary}
             />
           </TouchableOpacity>
         )}
-      </View>
-      
+      </TouchableOpacity>
+
       {error && <Text style={styles.errorText}>{error}</Text>}
     </View>
   );
-};
+});
 
 const styles = StyleSheet.native || StyleSheet.create({
   container: {

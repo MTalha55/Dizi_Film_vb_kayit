@@ -1,12 +1,69 @@
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Platform } from 'react-native';
+
+export const accentThemes = {
+  purple: { primary: '#8A2BE2', primaryLight: '#A855F7', borderActive: '#8A2BE2' },
+  blue: { primary: '#3B82F6', primaryLight: '#60A5FA', borderActive: '#3B82F6' },
+  green: { primary: '#10B981', primaryLight: '#34D399', borderActive: '#10B981' },
+  pink: { primary: '#EC4899', primaryLight: '#F472B6', borderActive: '#EC4899' },
+  gold: { primary: '#FFB800', primaryLight: '#FBBF24', borderActive: '#FFB800' }
+};
+
+let currentTheme = { ...accentThemes.purple };
+let themeName = 'purple';
+let listeners = [];
+
+export const getThemeName = () => themeName;
+
+export const registerThemeListener = (cb) => {
+  listeners.push(cb);
+  return () => {
+    listeners = listeners.filter(l => l !== cb);
+  };
+};
+
+const notifyListeners = () => {
+  listeners.forEach(cb => cb(themeName));
+};
+
+export const changeTheme = async (name) => {
+  if (accentThemes[name]) {
+    currentTheme = { ...accentThemes[name] };
+    themeName = name;
+    try {
+      await AsyncStorage.setItem('user_theme_accent_color', name);
+    } catch (e) {
+      console.error('AsyncStorage tema kaydetme hatası:', e);
+    }
+    notifyListeners();
+  }
+};
+
+// AsyncStorage'dan temayı yükle
+export const initTheme = async () => {
+  try {
+    const saved = await AsyncStorage.getItem('user_theme_accent_color');
+    if (saved && accentThemes[saved]) {
+      currentTheme = { ...accentThemes[saved] };
+      themeName = saved;
+      notifyListeners();
+    }
+  } catch (e) {
+    console.error('Theme initialization error:', e);
+  }
+};
+
 export const colors = {
   background: '#06060A',        // Derin uzay siyahı / sinema arka planı
   surface: '#0F0F16',           // Kart ve yüzeylerin koyu eflatun-gri tonu
   surfaceLight: '#181824',      // Daha açık kart arka planı / input alanları
   border: '#222232',            // İnce kenarlık çizgileri
-  borderActive: '#8A2BE2',      // Aktif odaklanmış alan çizgileri
   
-  primary: '#8A2BE2',           // Canlı Neon Mor (Ana tema rengi)
-  primaryLight: '#A855F7',      // Açık Mor (Vurgular ve hover/tıklama efektleri)
+  // Dinamik Getter Rengleri
+  get primary() { return currentTheme.primary; },
+  get primaryLight() { return currentTheme.primaryLight; },
+  get borderActive() { return currentTheme.borderActive; },
+  
   secondary: '#FF2E93',         // Neon Pembe / Mercan (İkincil uyarı/vurgu)
   accent: '#FFB800',            // Sinematik Altın Sarısı (Puanlama ve yıldızlar)
   
@@ -22,7 +79,14 @@ export const colors = {
   // Cam efektli yarı saydam arka planlar
   glassSurface: 'rgba(15, 15, 22, 0.75)',
   glassInput: 'rgba(24, 24, 36, 0.5)',
-  glassPill: 'rgba(138, 43, 226, 0.1)',
+  
+  get glassPill() {
+    const hex = currentTheme.primary;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, 0.1)`;
+  },
   
   // Kategori renkleri (Filtreleme ve kart rozetleri için)
   categories: {
@@ -59,14 +123,14 @@ export const layout = {
       elevation: 2
     },
     md: {
-      shadowColor: '#8A2BE2',
+      get shadowColor() { return currentTheme.primary; },
       shadowOffset: { width: 0, height: 4 },
       shadowOpacity: 0.3,
       shadowRadius: 10,
       elevation: 6
     },
     lg: {
-      shadowColor: '#8A2BE2',
+      get shadowColor() { return currentTheme.primary; },
       shadowOffset: { width: 0, height: 12 },
       shadowOpacity: 0.45,
       shadowRadius: 20,
