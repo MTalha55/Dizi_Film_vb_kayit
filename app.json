@@ -2,6 +2,9 @@
   "expo": {
     "name": "WatchVault",
     "slug": "film_dizi_kaydedici",
+    "experiments": {
+      "baseUrl": "/Dizi_Film_vb_kayit"
+    },
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
