@@ -20,11 +20,17 @@
     "react-native-screens": "4.25.2",
     "react-native-web": "^0.21.2"
   },
+  "homepage": "https://MTalha55.github.io/Dizi_Film_vb_kayit",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
     "ios": "expo start --ios",
-    "web": "expo start --web"
+    "web": "expo start --web",
+    "predeploy": "npx expo export -p web",
+    "deploy": "gh-pages -d dist"
   },
-  "private": true
+  "private": true,
+  "devDependencies": {
+    "gh-pages": "^6.3.0"
+  }
 }
