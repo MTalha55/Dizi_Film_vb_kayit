@@ -61,7 +61,7 @@ const AuthStack = () => (
 const MainTabNavigator = () => (
   <Tab.Navigator
     screenOptions={({ route }) => ({
-      tabBarIcon: ({ focused, color }) => {
+      tabBarIcon: ({ focused, color, size }) => {
         let iconName;
 
         if (route.name === 'List') {
@@ -74,7 +74,8 @@ const MainTabNavigator = () => (
           iconName = focused ? 'person' : 'person-outline';
         }
 
-        return <Ionicons name={iconName} size={18} color={color} />;
+        // size parametresini kullanarak orijinal büyüklüğe dönüyoruz (yaklaşık 24)
+        return <Ionicons name={iconName} size={size} color={color} />;
       },
       tabBarActiveTintColor: colors.primaryLight,
       tabBarInactiveTintColor: colors.textSecondary,
@@ -83,15 +84,18 @@ const MainTabNavigator = () => (
           web: {
             backgroundColor: 'rgba(18, 18, 26, 0.85)',
             backdropFilter: 'blur(20px)',
+            height: 64,
+            paddingBottom: 10,
+            paddingTop: 8,
           },
           default: {
             backgroundColor: colors.surface,
+            height: 70, // Mobilde biraz daha yüksek ki kesilmesin
+            paddingBottom: 12, // Alt padding eklendi
+            paddingTop: 8,
           },
         }),
         borderTopColor: colors.border,
-        height: 50,
-        paddingBottom: 6,
-        paddingTop: 4,
       },
       headerStyle: {
         ...Platform.select({
@@ -108,7 +112,7 @@ const MainTabNavigator = () => (
       },
       headerShown: false,
       tabBarLabelStyle: {
-        fontSize: 9,
+        fontSize: 10, // Font boyutu 9'dan 10'a çıkarıldı okunabilirlik için
         fontWeight: '600',
       }
     })}
