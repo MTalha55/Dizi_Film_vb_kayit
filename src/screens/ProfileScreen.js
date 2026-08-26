@@ -515,6 +515,18 @@ const ProfileScreen = ({ navigation }) => {
           onPress={handleLogout}
           style={styles.logoutBtn}
         />
+
+        {/* ── Footer ── */}
+        <View style={styles.appFooter}>
+          <Text style={styles.appFooterText}>© 2026 WatchVault. Tüm hakları saklıdır.</Text>
+          <TouchableOpacity 
+            onPress={() => Linking.openURL('https://www.instagram.com/talha_krbs')}
+            style={styles.appFooterLinkRow}
+          >
+            <Ionicons name="logo-instagram" size={14} color={colors.primaryLight} />
+            <Text style={styles.appFooterLink}> @talha_krbs</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
 
       {/* ── Fotoğraf Modal ── */}
@@ -958,6 +970,27 @@ const styles = StyleSheet.create({
     color: colors.textSecondary,
     fontWeight: '600',
   },
+  appFooter: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 30,
+    marginTop: 10,
+  },
+  appFooterText: {
+    fontSize: 11,
+    color: colors.textMuted,
+    marginBottom: 6,
+  },
+  appFooterLinkRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  appFooterLink: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: colors.primaryLight,
+  }
 });
 
 export default ProfileScreen;

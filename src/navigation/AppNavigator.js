@@ -59,95 +59,81 @@ const AuthStack = () => (
 
 // Ana Uygulama Sekmeleri (List, Add, Profile)
 const MainTabNavigator = () => (
-  <View style={{ flex: 1 }}>
-    <Tab.Navigator
-      screenOptions={({ route }) => ({
-        tabBarIcon: ({ focused, color, size }) => {
-          let iconName;
+  <Tab.Navigator
+    screenOptions={({ route }) => ({
+      tabBarIcon: ({ focused, color }) => {
+        let iconName;
 
-          if (route.name === 'List') {
-            iconName = focused ? 'list' : 'list-outline';
-          } else if (route.name === 'Add') {
-            iconName = focused ? 'add-circle' : 'add-circle-outline';
-          } else if (route.name === 'Discover') {
-            iconName = focused ? 'bulb' : 'bulb-outline';
-          } else if (route.name === 'Profile') {
-            iconName = focused ? 'person' : 'person-outline';
-          }
-
-          return <Ionicons name={iconName} size={size} color={color} />;
-        },
-        tabBarActiveTintColor: colors.primaryLight,
-        tabBarInactiveTintColor: colors.textSecondary,
-        tabBarStyle: {
-          ...Platform.select({
-            web: {
-              backgroundColor: 'rgba(18, 18, 26, 0.85)',
-              backdropFilter: 'blur(20px)',
-              height: 80,
-              paddingBottom: 24,
-              paddingTop: 8,
-            },
-            default: {
-              backgroundColor: colors.surface,
-              height: 80,
-              paddingBottom: 20,
-              paddingTop: 8,
-            },
-          }),
-          borderTopColor: colors.border,
-        },
-        headerStyle: {
-          ...Platform.select({
-            web: { backgroundColor: 'rgba(18, 18, 26, 0.85)' },
-            default: { backgroundColor: colors.surface },
-          }),
-          shadowColor: 'transparent',
-          borderBottomWidth: 1,
-          borderBottomColor: colors.border,
-        },
-        headerTintColor: colors.text,
-        headerTitleStyle: {
-          fontWeight: 'bold',
-        },
-        headerShown: false,
-        tabBarLabelStyle: {
-          fontSize: 10,
-          fontWeight: '600',
+        if (route.name === 'List') {
+          iconName = focused ? 'list' : 'list-outline';
+        } else if (route.name === 'Add') {
+          iconName = focused ? 'add-circle' : 'add-circle-outline';
+        } else if (route.name === 'Discover') {
+          iconName = focused ? 'bulb' : 'bulb-outline';
+        } else if (route.name === 'Profile') {
+          iconName = focused ? 'person' : 'person-outline';
         }
-      })}
-    >
-      <Tab.Screen 
-        name="List" 
-        component={ListScreen} 
-        options={{ title: 'İzleme Listesi' }}
-      />
-      <Tab.Screen 
-        name="Add" 
-        component={AddScreen} 
-        options={{ title: 'Kayıt Ekle' }}
-      />
-      <Tab.Screen 
-        name="Discover" 
-        component={DiscoverScreen} 
-        options={{ title: 'Keşfet' }}
-      />
-      <Tab.Screen 
-        name="Profile" 
-        component={ProfileScreen} 
-        options={{ title: 'Profilim' }}
-      />
-    </Tab.Navigator>
-    {/* Footer */}
-    <View style={styles.footer}>
-      <Text style={styles.footerText}>© 2026 WatchVault. Tüm hakları saklıdır.</Text>
-      <TouchableOpacity onPress={() => Linking.openURL('https://www.instagram.com/talha_krbs')}>
-        <Text style={styles.footerLink}>
-          <Ionicons name="logo-instagram" size={12} color={colors.primaryLight} /> @talha_krbs
-        </Text>
-      </TouchableOpacity>
-    </View>
-  </View>
+
+        return <Ionicons name={iconName} size={18} color={color} />;
+      },
+      tabBarActiveTintColor: colors.primaryLight,
+      tabBarInactiveTintColor: colors.textSecondary,
+      tabBarStyle: {
+        ...Platform.select({
+          web: {
+            backgroundColor: 'rgba(18, 18, 26, 0.85)',
+            backdropFilter: 'blur(20px)',
+          },
+          default: {
+            backgroundColor: colors.surface,
+          },
+        }),
+        borderTopColor: colors.border,
+        height: 50,
+        paddingBottom: 6,
+        paddingTop: 4,
+      },
+      headerStyle: {
+        ...Platform.select({
+          web: { backgroundColor: 'rgba(18, 18, 26, 0.85)' },
+          default: { backgroundColor: colors.surface },
+        }),
+        shadowColor: 'transparent',
+        borderBottomWidth: 1,
+        borderBottomColor: colors.border,
+      },
+      headerTintColor: colors.text,
+      headerTitleStyle: {
+        fontWeight: 'bold',
+      },
+      headerShown: false,
+      tabBarLabelStyle: {
+        fontSize: 9,
+        fontWeight: '600',
+      }
+    })}
+  >
+    <Tab.Screen 
+      name="List" 
+      component={ListScreen} 
+      options={{ title: 'İzleme Listesi' }}
+    />
+    <Tab.Screen 
+      name="Add" 
+      component={AddScreen} 
+      options={{ title: 'Kayıt Ekle' }}
+    />
+    <Tab.Screen 
+      name="Discover" 
+      component={DiscoverScreen} 
+      options={{ title: 'Keşfet' }}
+    />
+    <Tab.Screen 
+      name="Profile" 
+      component={ProfileScreen} 
+      options={{ title: 'Profilim' }}
+    />
+  </Tab.Navigator>
 );
 
 // Ana Stack (Sekmeler + Detay Ekranı)
