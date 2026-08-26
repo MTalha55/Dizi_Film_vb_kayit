@@ -473,7 +473,7 @@ const DetailScreen = ({ route, navigation }) => {
                 iconName="image-outline"
               />
 
-              {imageUrl.trim().startsWith('http') && (
+              {(imageUrl.trim().startsWith('http') || imageUrl.trim().startsWith('data:') || imageUrl.trim().startsWith('file:')) && (
                 <View style={styles.previewContainer}>
                   <Image source={{ uri: imageUrl }} style={[styles.previewImage, { shadowColor: colors.primary }]} resizeMode="cover" />
                 </View>
@@ -526,7 +526,7 @@ const DetailScreen = ({ route, navigation }) => {
             <View style={styles.detailsContainer}>
               {/* Afiş Alanı */}
               <View style={[styles.bannerContainer, { shadowColor: colors.primary }]}>
-                {record.imageUrl && record.imageUrl.trim().startsWith('http') ? (
+                {record.imageUrl && (record.imageUrl.trim().startsWith('http') || record.imageUrl.trim().startsWith('data:') || record.imageUrl.trim().startsWith('file:')) ? (
                   <Image source={{ uri: record.imageUrl }} style={styles.bannerImage} resizeMode="cover" />
                 ) : (
                   <View style={[styles.bannerPlaceholder, { backgroundColor: getCategoryColor(record.category) + '15' }]}>

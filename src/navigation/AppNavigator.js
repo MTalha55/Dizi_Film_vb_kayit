@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet, Platform } from 'react-native';
+import { View, ActivityIndicator, StyleSheet, Platform, Alert } from 'react-native';
 import { NavigationContainer, DarkTheme as NavigationDarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { Ionicons } from '@expo/vector-icons';
-import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../firebase/config';
+import { onAuthStateChanged, signOut } from 'firebase/auth';
+import { collection, query, where, onSnapshot } from 'firebase/firestore';
+import { auth, db } from '../firebase/config';
 import { colors, layout } from '../theme/colors';
 
 // Ekranlar
@@ -18,6 +19,11 @@ import DetailScreen from '../screens/DetailScreen';
 import ProfileScreen from '../screens/ProfileScreen';
 import PrivacyPolicyScreen from '../screens/PrivacyPolicyScreen';
 import AdminScreen from '../screens/AdminScreen';
+import ChatScreen from '../screens/ChatScreen';
+import FeedScreen from '../screens/FeedScreen';
+import SearchUsersScreen from '../screens/SearchUsersScreen';
+import UserProfileScreen from '../screens/UserProfileScreen';
+import DiscoverScreen from '../screens/DiscoverScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -62,6 +68,8 @@ const MainTabNavigator = () => (
           iconName = focused ? 'list' : 'list-outline';
         } else if (route.name === 'Add') {
           iconName = focused ? 'add-circle' : 'add-circle-outline';
+        } else if (route.name === 'Discover') {
+          iconName = focused ? 'bulb' : 'bulb-outline';
         } else if (route.name === 'Profile') {
           iconName = focused ? 'person' : 'person-outline';
         }
@@ -116,6 +124,11 @@ const MainTabNavigator = () => (
       options={{ title: 'Kayıt Ekle' }}
     />
     <Tab.Screen 
+      name="Discover" 
+      component={DiscoverScreen} 
+      options={{ title: 'Keşfet' }}
+    />
+    <Tab.Screen 
       name="Profile" 
       component={ProfileScreen} 
       options={{ title: 'Profilim' }}
@@ -143,6 +156,18 @@ const AppStack = () => (
       name="Admin" 
       component={AdminScreen} 
     />
+    <Stack.Screen 
+      name="Chat" 
+      component={ChatScreen} 
+    />
+    <Stack.Screen 
+      name="SearchUsers" 
+      component={SearchUsersScreen} 
+    />
+    <Stack.Screen 
+      name="UserProfile" 
+      component={UserProfileScreen} 
+    />
   </Stack.Navigator>
 );
 
@@ -152,11 +177,38 @@ const AppNavigator = () => {
   const [initializing, setInitializing] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, (currentUser) => {
+    let unsubscribeSnapshot = null;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       setUser(currentUser);
       if (initializing) setInitializing(false);
+
+      // Eski dinleyiciyi temizle
+      if (unsubscribeSnapshot) {
+        unsubscribeSnapshot();
+        unsubscribeSnapshot = null;
+      }
+
+      if (currentUser && currentUser.email) {
+        const q = query(collection(db, 'blacklisted_emails'), where('email', '==', currentUser.email.toLowerCase()));
+        unsubscribeSnapshot = onSnapshot(q, (snapshot) => {
+          if (!snapshot.empty) {
+            signOut(auth);
+            if (Platform.OS === 'web') {
+              alert('Hesabınız yönetici tarafından engellendi. Oturumunuz kapatıldı.');
+            } else {
+              // React Native'de Alert importu gerekebilir, ama yukarıda View, vs var, Alert'i de eklemeliyiz
+              Alert.alert('Engellendi', 'Hesabınız yönetici tarafından engellendi. Oturumunuz kapatıldı.');
+            }
+          }
+        });
+      }
     });
-    return unsubscribe;
+
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeSnapshot) unsubscribeSnapshot();
+    };
   }, []);
 
   if (initializing) {

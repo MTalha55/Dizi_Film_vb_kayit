@@ -3,6 +3,7 @@ import { StatusBar } from 'expo-status-bar';
 import { Platform } from 'react-native';
 import AppNavigator from './src/navigation/AppNavigator';
 import { initTheme, registerThemeListener } from './src/theme/colors';
+import { registerForPushNotificationsAsync } from './src/services/notifications';
 
 // Web platformu için Google Fonts (Plus Jakarta Sans) enjeksiyonu
 if (Platform.OS === 'web') {
@@ -22,6 +23,9 @@ export default function App() {
   useEffect(() => {
     // Uygulama başlangıcında AsyncStorage'dan temayı yükle
     initTheme();
+
+    // Push Notifications başlat (Kullanıcı izin verirse Firestore'a yazar)
+    registerForPushNotificationsAsync();
 
     // Tema değişikliklerini dinle ve ekranı yeniden çizdir
     const unsubscribe = registerThemeListener(() => {

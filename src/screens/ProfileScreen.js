@@ -196,6 +196,16 @@ const ProfileScreen = ({ navigation }) => {
     ? user.email.charAt(0).toUpperCase()
     : 'U';
 
+  const getBadges = () => {
+    const badges = [];
+    if (stats.total >= 10) badges.push({ name: 'Meraklı', icon: 'eye', color: '#3B82F6' });
+    if (stats.total >= 50) badges.push({ name: 'Sinefil', icon: 'film', color: '#F59E0B' });
+    if (stats.total >= 100) badges.push({ name: 'Efsane', icon: 'star', color: '#EF4444' });
+    if (stats['Anime'] >= 10) badges.push({ name: 'Otaku', icon: 'planet', color: '#8B5CF6' });
+    if (stats['Dizi'] >= 10) badges.push({ name: 'Dizi Gurmesi', icon: 'tv', color: '#10B981' });
+    return badges;
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
@@ -262,6 +272,18 @@ const ProfileScreen = ({ navigation }) => {
               <Text style={styles.joinedText}>Cinsiyet: {userGender}</Text>
             </View>
           </View>
+
+          {/* Oyunlaştırma Rozetleri */}
+          {getBadges().length > 0 && (
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', marginTop: 12, gap: 8 }}>
+              {getBadges().map((badge, index) => (
+                <View key={index} style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: badge.color + '15', paddingHorizontal: 10, paddingVertical: 5, borderRadius: 12, borderWidth: 1, borderColor: badge.color + '40' }}>
+                  <Ionicons name={badge.icon} size={14} color={badge.color} style={{ marginRight: 4 }} />
+                  <Text style={{ color: badge.color, fontSize: 12, fontWeight: 'bold' }}>{badge.name}</Text>
+                </View>
+              ))}
+            </View>
+          )}
         </View>
 
         {/* ── Arayüz Teması ── */}
@@ -416,8 +438,8 @@ const ProfileScreen = ({ navigation }) => {
             style={styles.supportBtn}
             activeOpacity={0.8}
             onPress={() =>
-              Linking.openURL('mailto:mtkirbas@gmail.com').catch(() =>
-                Alert.alert('E-posta', 'mtkirbas@gmail.com')
+              Linking.openURL('mailto:xenonstate.offical@gmail.com').catch(() =>
+                Alert.alert('E-posta', 'xenonstate.offical@gmail.com')
               )
             }
           >
@@ -426,7 +448,7 @@ const ProfileScreen = ({ navigation }) => {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.supportLabel}>E-posta ile İletişim</Text>
-              <Text style={[styles.supportValue, { color: colors.primaryLight }]}>mtkirbas@gmail.com</Text>
+              <Text style={[styles.supportValue, { color: colors.primaryLight }]}>xenonstate.offical@gmail.com</Text>
             </View>
             <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
@@ -435,8 +457,8 @@ const ProfileScreen = ({ navigation }) => {
             style={styles.supportBtn}
             activeOpacity={0.8}
             onPress={() =>
-              Linking.openURL('https://instagram.com/talha_krbs').catch(() =>
-                Alert.alert('Instagram', '@talha_krbs')
+              Linking.openURL('https://instagram.com/the_xenonstate').catch(() =>
+                Alert.alert('Instagram', '@the_xenonstate')
               )
             }
           >
@@ -445,13 +467,27 @@ const ProfileScreen = ({ navigation }) => {
             </View>
             <View style={{ flex: 1 }}>
               <Text style={styles.supportLabel}>Instagram</Text>
-              <Text style={[styles.supportValue, { color: colors.secondary }]}>@talha_krbs</Text>
+              <Text style={[styles.supportValue, { color: colors.secondary }]}>@the_xenonstate</Text>
             </View>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.supportBtn}
+            activeOpacity={0.8}
+            onPress={() => navigation.navigate('Chat')}
+          >
+            <View style={[styles.supportIconWrap, { backgroundColor: colors.accent + '18', borderColor: colors.accent + '35' }]}>
+              <Ionicons name="chatbubbles-outline" size={20} color={colors.accent} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.supportLabel}>Admin ile İletişime Geç</Text>
+              <Text style={[styles.supportValue, { color: colors.accent }]}>Soru, öneri veya şikayetleriniz için</Text>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
 
         {/* ── Yönetici Paneli (Sadece Yöneticiye Görünür) ── */}
-        {user?.email === 'mtkirbas@gmail.com' && (
+        {user?.email?.toLowerCase() === 'mtkirbas@gmail.com' && (
           <View style={styles.adminSection}>
             <Text style={styles.sectionTitle}>Sistem Yönetimi</Text>
             <TouchableOpacity

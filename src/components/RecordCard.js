@@ -62,7 +62,7 @@ const RecordCard = ({ item, onView, onEdit, onDelete }) => {
       <View style={styles.row}>
         {/* Poster / Görsel Alanı */}
         <View style={[styles.posterContainer, { borderColor: getCategoryColor() + '40' }]}>
-          {imageUrl && imageUrl.trim().startsWith('http') ? (
+          {imageUrl && (imageUrl.trim().startsWith('http') || imageUrl.trim().startsWith('data:') || imageUrl.trim().startsWith('file:')) ? (
             <Image
               source={{ uri: imageUrl }}
               style={styles.poster}

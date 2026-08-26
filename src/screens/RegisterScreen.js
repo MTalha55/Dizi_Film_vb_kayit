@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
-import { doc, setDoc } from 'firebase/firestore';
+import { doc, setDoc, collection, query, where, getDocs } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 import { colors, layout } from '../theme/colors';
 import CustomInput from '../components/CustomInput';
@@ -96,7 +96,7 @@ const RegisterScreen = ({ navigation }) => {
     setLoading(true);
     try {
       // 1. Firebase Auth ile kullanıcı oluştur
-      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const userCredential = await createUserWithEmailAndPassword(auth, email.trim(), password);
       
       // 2. Auth profilde displayName güncelle
       await updateProfile(userCredential.user, {

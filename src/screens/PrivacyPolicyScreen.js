@@ -30,11 +30,11 @@ const PrivacyPolicyScreen = ({ navigation, route }) => {
   const onAccept = route?.params?.onAccept;
 
   const openMail = () => {
-    Linking.openURL('mailto:mtkirbas@gmail.com').catch(() => {
+    Linking.openURL('mailto:xenonstate.offical@gmail.com').catch(() => {
       if (Platform.OS === 'web') {
-        alert('E-posta adresi: mtkirbas@gmail.com');
+        alert('E-posta adresi: xenonstate.offical@gmail.com');
       } else {
-        Alert.alert('E-posta', 'mtkirbas@gmail.com');
+        Alert.alert('E-posta', 'xenonstate.offical@gmail.com');
       }
     });
   };
@@ -135,7 +135,7 @@ const PrivacyPolicyScreen = ({ navigation, route }) => {
           <View style={styles.contactRow}>
             <TouchableOpacity style={styles.contactBtn} onPress={openMail} activeOpacity={0.8}>
               <Ionicons name="mail-outline" size={15} color={colors.primaryLight} />
-              <Text style={styles.contactBtnText}>mtkirbas@gmail.com</Text>
+              <Text style={styles.contactBtnText}>xenonstate.offical@gmail.com</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.contactBtn} onPress={openInstagram} activeOpacity={0.8}>
               <Ionicons name="logo-instagram" size={15} color={colors.secondary} />

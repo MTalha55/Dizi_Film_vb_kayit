@@ -15,9 +15,10 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { collection, getDocs } from 'firebase/firestore';
+import { collection, getDocs, doc, setDoc, deleteDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { colors, layout } from '../theme/colors';
+import RecordCard from '../components/RecordCard';
 
 const AdminScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(true);
@@ -29,6 +30,13 @@ const AdminScreen = ({ navigation }) => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [sortBy, setSortBy] = useState('activity');
   const [genderFilter, setGenderFilter] = useState('Hepsi');
+  const [activeTab, setActiveTab] = useState('users'); // 'users' veya 'blacklist'
+  const [blacklistedEmails, setBlacklistedEmails] = useState([]);
+  
+  // Ban Password Modal State
+  const [banModalVisible, setBanModalVisible] = useState(false);
+  const [userToBan, setUserToBan] = useState(null);
+  const [adminPasswordInput, setAdminPasswordInput] = useState('');
   const [stats, setStats] = useState({
     totalUsers: 0,
     totalRecords: 0,
@@ -44,18 +52,37 @@ const AdminScreen = ({ navigation }) => {
   const fetchData = async () => {
     try {
       // Fetch users
-      const usersSnap = await getDocs(collection(db, 'users'));
-      const usersList = [];
-      usersSnap.forEach((doc) => {
-        usersList.push({ id: doc.id, ...doc.data() });
-      });
+      let usersList = [];
+      try {
+        const usersSnap = await getDocs(collection(db, 'users'));
+        usersSnap.forEach((doc) => {
+          usersList.push({ id: doc.id, ...doc.data() });
+        });
+      } catch (err) {
+        console.warn("Kullanıcılar çekilirken hata (İzin hatası olabilir):", err.message);
+      }
 
       // Fetch records
-      const recordsSnap = await getDocs(collection(db, 'records'));
-      const recordsList = [];
-      recordsSnap.forEach((doc) => {
-        recordsList.push({ id: doc.id, ...doc.data() });
-      });
+      let recordsList = [];
+      try {
+        const recordsSnap = await getDocs(collection(db, 'records'));
+        recordsSnap.forEach((doc) => {
+          recordsList.push({ id: doc.id, ...doc.data() });
+        });
+      } catch (err) {
+        console.warn("Kayıtlar çekilirken hata (İzin hatası olabilir):", err.message);
+      }
+
+      // Fetch blacklist
+      let blacklistList = [];
+      try {
+        const blacklistSnap = await getDocs(collection(db, 'blacklisted_emails'));
+        blacklistSnap.forEach((doc) => {
+          blacklistList.push({ id: doc.id, ...doc.data() });
+        });
+      } catch (err) {
+        console.warn("Kara liste çekilirken hata (Veritabanı kurallarından dolayı engellendi):", err.message);
+      }
 
       // Calculate counts per user
       const counts = {};
@@ -72,6 +99,7 @@ const AdminScreen = ({ navigation }) => {
 
       setUsers(usersList);
       setRecords(recordsList);
+      setBlacklistedEmails(blacklistList);
       setUserCounts(counts);
 
       const totalU = usersList.length;
@@ -111,6 +139,71 @@ const AdminScreen = ({ navigation }) => {
     return records.filter((r) => r.userId === selectedUser.id);
   };
 
+  const handleBanUser = (user) => {
+    setUserToBan(user);
+    setAdminPasswordInput('');
+    setBanModalVisible(true);
+  };
+
+  const confirmBan = async () => {
+    if (adminPasswordInput !== 'admin123') {
+      if (Platform.OS === 'web') alert('Şifre hatalı!');
+      else Alert.alert('Hata', 'Yönetici şifresi yanlış.');
+      return;
+    }
+
+    setBanModalVisible(false);
+    setLoading(true);
+    try {
+      if (userToBan.email) {
+        await setDoc(doc(db, 'blacklisted_emails', userToBan.email.toLowerCase()), {
+          email: userToBan.email.toLowerCase(),
+          bannedAt: new Date().toISOString()
+        });
+      }
+      
+      // Sadece isBanned bayrağını işaretle, silme
+      try {
+        await setDoc(doc(db, 'users', userToBan.id), { isBanned: true }, { merge: true });
+      } catch (userErr) {
+        console.warn("Kullanıcı dökümanı güncellenemedi (İzin hatası olabilir), ama kara listeye eklendi:", userErr);
+      }
+
+      if (Platform.OS === 'web') alert('Kullanıcı engellendi.');
+      else Alert.alert('Başarılı', 'Kullanıcı engellendi.');
+      fetchData();
+    } catch (error) {
+      console.error('Ban hatası:', error);
+      if (Platform.OS === 'web') alert(`Ban hatası: ${error.message}`);
+      else Alert.alert('Hata', `Kullanıcı engellenirken hata oluştu:\n${error.message}`);
+      setLoading(false);
+    }
+  };
+
+  const handleUnban = async (emailToUnban) => {
+    try {
+      await deleteDoc(doc(db, 'blacklisted_emails', emailToUnban));
+      
+      // İlgili kullanıcının isBanned bayrağını false yap
+      const userToUnban = users.find(u => u.email && u.email.toLowerCase() === emailToUnban.toLowerCase());
+      if (userToUnban) {
+        try {
+          await setDoc(doc(db, 'users', userToUnban.id), { isBanned: false }, { merge: true });
+        } catch (uErr) {
+          console.warn('Kullanıcı dökümanı güncellenemedi:', uErr);
+        }
+      }
+
+      if (Platform.OS === 'web') alert('Kullanıcının engeli kaldırıldı.');
+      else Alert.alert('Başarılı', 'Kullanıcının engeli kaldırıldı.');
+      fetchData();
+    } catch (error) {
+      console.error('Engel kaldırma hatası:', error);
+      if (Platform.OS === 'web') alert(`Hata: ${error.message}`);
+      else Alert.alert('Hata', `Engel kaldırılırken hata oluştu:\n${error.message}`);
+    }
+  };
+
   const renderStars = (rating) => {
     const stars = [];
     for (let i = 1; i <= 5; i++) {
@@ -128,7 +221,14 @@ const AdminScreen = ({ navigation }) => {
   };
 
   const getFilteredUsers = () => {
-    let result = [...users];
+    let result = users.filter(u => {
+      if (u.isBanned) return false;
+      // Eğer isBanned güncellenememişse, email kontrolü yap
+      if (u.email && blacklistedEmails.some(b => b.email === u.email.toLowerCase())) {
+        return false;
+      }
+      return true;
+    });
 
     // 1. Filter by Search Query
     if (searchQuery.trim()) {
@@ -251,97 +351,112 @@ const AdminScreen = ({ navigation }) => {
           </View>
         </View>
 
-        {/* Kullanıcılar Listesi Başlık ve Arama */}
-        <View style={styles.listHeaderRow}>
-          <Text style={styles.listTitle}>Kayıtlı Kullanıcılar ({filteredUsers.length})</Text>
+        {/* Tab Selector */}
+        <View style={{ flexDirection: 'row', paddingHorizontal: layout.spacing.md, marginTop: 20 }}>
+          <TouchableOpacity 
+            style={[styles.tabBtn, activeTab === 'users' && styles.tabBtnActive]}
+            onPress={() => setActiveTab('users')}
+          >
+            <Text style={[styles.tabBtnText, activeTab === 'users' && styles.tabBtnTextActive]}>Kullanıcılar ({filteredUsers.length})</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={[styles.tabBtn, activeTab === 'blacklist' && styles.tabBtnActive]}
+            onPress={() => setActiveTab('blacklist')}
+          >
+            <Text style={[styles.tabBtnText, activeTab === 'blacklist' && styles.tabBtnTextActive]}>Kara Liste ({blacklistedEmails.length})</Text>
+          </TouchableOpacity>
         </View>
 
-        <View style={styles.searchContainer}>
-          <Ionicons name="search-outline" size={20} color={colors.textSecondary} style={styles.searchIcon} />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="İsim veya e-posta ile ara..."
-            placeholderTextColor={colors.textMuted}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            autoCapitalize="none"
-          />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearBtn}>
-              <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* Cinsiyet Filtreleme */}
-        <View style={styles.filterSection}>
-          <Text style={styles.filterSectionLabel}>Cinsiyet Filtresi</Text>
-          <View style={styles.filterBtnGroup}>
-            {['Hepsi', 'Erkek', 'Kadın', 'Belirtmek İstemiyorum'].map((gender) => {
-              const isSelected = genderFilter === gender;
-              return (
-                <TouchableOpacity
-                  key={gender}
-                  onPress={() => setGenderFilter(gender)}
-                  style={[
-                    styles.filterPill,
-                    isSelected && styles.filterPillActive,
-                  ]}
-                  activeOpacity={0.8}
-                >
-                  <Text
-                    style={[
-                      styles.filterPillText,
-                      isSelected && styles.filterPillTextActive,
-                    ]}
-                  >
-                    {gender === 'Belirtmek İstemiyorum' ? 'Belirtilmedi' : gender}
-                  </Text>
+        {activeTab === 'users' && (
+          <>
+            <View style={styles.searchContainer}>
+              <Ionicons name="search-outline" size={20} color={colors.textSecondary} style={styles.searchIcon} />
+              <TextInput
+                style={styles.searchInput}
+                placeholder="İsim veya e-posta ile ara..."
+                placeholderTextColor={colors.textMuted}
+                value={searchQuery}
+                onChangeText={setSearchQuery}
+                autoCapitalize="none"
+              />
+              {searchQuery.length > 0 ? (
+                <TouchableOpacity onPress={() => setSearchQuery('')} style={styles.clearBtn}>
+                  <Ionicons name="close-circle" size={18} color={colors.textSecondary} />
                 </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
+              ) : null}
+            </View>
 
-        {/* Sıralama Seçenekleri */}
-        <View style={styles.filterSection}>
-          <Text style={styles.filterSectionLabel}>Sıralama Seçeneği</Text>
-          <View style={styles.sortBtnGroup}>
-            {[
-              { id: 'activity', label: 'En Aktifler', icon: 'flame-outline' },
-              { id: 'date', label: 'Yeni Kayıtlar', icon: 'calendar-outline' },
-              { id: 'name', label: 'İsim (A-Z)', icon: 'text-outline' },
-            ].map((option) => {
-              const isSelected = sortBy === option.id;
-              return (
-                <TouchableOpacity
-                  key={option.id}
-                  onPress={() => setSortBy(option.id)}
-                  style={[
-                    styles.sortBtn,
-                    isSelected && styles.sortBtnActive,
-                  ]}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons
-                    name={option.icon}
-                    size={13}
-                    color={isSelected ? '#fff' : colors.textSecondary}
-                    style={{ marginRight: 4 }}
-                  />
-                  <Text
-                    style={[
-                      styles.sortBtnText,
-                      isSelected && styles.sortBtnTextActive,
-                    ]}
-                  >
-                    {option.label}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </View>
+            {/* Cinsiyet Filtreleme */}
+            <View style={styles.filterSection}>
+              <Text style={styles.filterSectionLabel}>Cinsiyet Filtresi</Text>
+              <View style={styles.filterBtnGroup}>
+                {['Hepsi', 'Erkek', 'Kadın', 'Belirtmek İstemiyorum'].map((gender) => {
+                  const isSelected = genderFilter === gender;
+                  return (
+                    <TouchableOpacity
+                      key={gender}
+                      onPress={() => setGenderFilter(gender)}
+                      style={[
+                        styles.filterPill,
+                        isSelected && styles.filterPillActive,
+                      ]}
+                      activeOpacity={0.8}
+                    >
+                      <Text
+                        style={[
+                          styles.filterPillText,
+                          isSelected && styles.filterPillTextActive,
+                        ]}
+                      >
+                        {gender === 'Belirtmek İstemiyorum' ? 'Belirtilmedi' : gender}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+
+            {/* Sıralama Seçenekleri */}
+            <View style={styles.filterSection}>
+              <Text style={styles.filterSectionLabel}>Sıralama Seçeneği</Text>
+              <View style={styles.sortBtnGroup}>
+                {[
+                  { id: 'activity', label: 'En Aktifler', icon: 'flame-outline' },
+                  { id: 'date', label: 'Yeni Kayıtlar', icon: 'calendar-outline' },
+                  { id: 'name', label: 'İsim (A-Z)', icon: 'text-outline' },
+                ].map((option) => {
+                  const isSelected = sortBy === option.id;
+                  return (
+                    <TouchableOpacity
+                      key={option.id}
+                      onPress={() => setSortBy(option.id)}
+                      style={[
+                        styles.sortBtn,
+                        isSelected && styles.sortBtnActive,
+                      ]}
+                      activeOpacity={0.8}
+                    >
+                      <Ionicons
+                        name={option.icon}
+                        size={13}
+                        color={isSelected ? '#fff' : colors.textSecondary}
+                        style={{ marginRight: 4 }}
+                      />
+                      <Text
+                        style={[
+                          styles.sortBtnText,
+                          isSelected && styles.sortBtnTextActive,
+                        ]}
+                      >
+                        {option.label}
+                      </Text>
+                    </TouchableOpacity>
+                  );
+                })}
+              </View>
+            </View>
+          </>
+        )}
       </View>
     );
   };
@@ -388,6 +503,7 @@ const AdminScreen = ({ navigation }) => {
             {
               backgroundColor: item.gender === 'Erkek' ? 'rgba(59, 130, 246, 0.08)' : item.gender === 'Kadın' ? 'rgba(236, 72, 153, 0.08)' : 'rgba(113, 113, 122, 0.08)',
               borderColor: item.gender === 'Erkek' ? 'rgba(59, 130, 246, 0.25)' : item.gender === 'Kadın' ? 'rgba(236, 72, 153, 0.25)' : 'rgba(113, 113, 122, 0.25)',
+              marginBottom: 8
             }
           ]}>
             <Ionicons
@@ -402,6 +518,22 @@ const AdminScreen = ({ navigation }) => {
             ]}>
               {item.gender || 'Belirtilmedi'}
             </Text>
+          </View>
+          <View style={{flexDirection: 'row', gap: 6, marginTop: 4}}>
+            <TouchableOpacity 
+              style={{flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(59, 130, 246, 0.1)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4, borderWidth: 1, borderColor: 'rgba(59, 130, 246, 0.3)'}}
+              onPress={(e) => { e.stopPropagation(); navigation.navigate('Chat', { targetUserId: item.id, targetUserName: item.name }); }}
+            >
+              <Ionicons name="chatbubbles-outline" size={12} color="#3B82F6" style={{marginRight: 4}} />
+              <Text style={{color: '#3B82F6', fontSize: 10, fontWeight: 'bold'}}>Mesaj</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={{flexDirection: 'row', alignItems: 'center', backgroundColor: 'rgba(239, 68, 68, 0.1)', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 4, borderWidth: 1, borderColor: 'rgba(239, 68, 68, 0.3)'}}
+              onPress={(e) => { e.stopPropagation(); handleBanUser(item); }}
+            >
+              <Ionicons name="ban-outline" size={12} color="#EF4444" style={{marginRight: 4}} />
+              <Text style={{color: '#EF4444', fontSize: 10, fontWeight: 'bold'}}>Engelle</Text>
+            </TouchableOpacity>
           </View>
         </View>
       </TouchableOpacity>
@@ -429,28 +561,73 @@ const AdminScreen = ({ navigation }) => {
           <Text style={styles.loadingText}>Yönetici paneli yükleniyor...</Text>
         </View>
       ) : (
-        <FlatList
-          data={filteredUsers}
-          keyExtractor={(item) => item.id}
-          renderItem={renderUserItem}
-          ListHeaderComponent={renderHeader}
-          contentContainerStyle={styles.listContent}
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            <RefreshControl
-              refreshing={refreshing}
-              onRefresh={onRefresh}
-              tintColor={colors.primary}
-              colors={[colors.primary]}
+        <>
+          {activeTab === 'users' ? (
+            <FlatList
+              data={filteredUsers}
+              keyExtractor={(item) => item.id}
+              renderItem={renderUserItem}
+              ListHeaderComponent={renderHeader}
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  tintColor={colors.primary}
+                  colors={[colors.primary]}
+                />
+              }
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <Ionicons name="search-outline" size={48} color={colors.textMuted} />
+                  <Text style={styles.emptyText}>Aradığınız kriterlere uygun kullanıcı bulunamadı.</Text>
+                </View>
+              }
             />
-          }
-          ListEmptyComponent={
-            <View style={styles.emptyContainer}>
-              <Ionicons name="search-outline" size={48} color={colors.textMuted} />
-              <Text style={styles.emptyText}>Aradığınız kriterlere uygun kullanıcı bulunamadı.</Text>
-            </View>
-          }
-        />
+          ) : (
+            <FlatList
+              data={blacklistedEmails}
+              keyExtractor={(item) => item.id}
+              ListHeaderComponent={renderHeader}
+              contentContainerStyle={styles.listContent}
+              showsVerticalScrollIndicator={false}
+              refreshControl={
+                <RefreshControl
+                  refreshing={refreshing}
+                  onRefresh={onRefresh}
+                  tintColor={colors.primary}
+                  colors={[colors.primary]}
+                />
+              }
+              renderItem={({ item }) => (
+                <View style={[styles.userCard, { alignItems: 'center' }]}>
+                  <View style={styles.userLeft}>
+                    <View style={[styles.avatarCircle, { backgroundColor: '#EF444430' }]}>
+                      <Ionicons name="ban" size={24} color="#EF4444" />
+                    </View>
+                    <View style={styles.userDetails}>
+                      <Text style={styles.userName}>{item.email}</Text>
+                      <Text style={styles.userDate}>Ban Tarihi: {formatDate(item.bannedAt)}</Text>
+                    </View>
+                  </View>
+                  <TouchableOpacity 
+                    style={{ backgroundColor: 'rgba(16, 185, 129, 0.1)', paddingHorizontal: 12, paddingVertical: 8, borderRadius: 6, borderWidth: 1, borderColor: 'rgba(16, 185, 129, 0.3)' }}
+                    onPress={() => handleUnban(item.id)}
+                  >
+                    <Text style={{ color: '#10B981', fontWeight: 'bold' }}>Engeli Kaldır</Text>
+                  </TouchableOpacity>
+                </View>
+              )}
+              ListEmptyComponent={
+                <View style={styles.emptyContainer}>
+                  <Ionicons name="shield-checkmark-outline" size={60} color={colors.textMuted} />
+                  <Text style={styles.emptyText}>Kara liste boş.</Text>
+                </View>
+              }
+            />
+          )}
+        </>
       )}
 
       {/* Kullanıcı Detay Modalı (Eklediklerini Görme) */}
@@ -493,50 +670,59 @@ const AdminScreen = ({ navigation }) => {
                 </View>
               ) : (
                 getSelectedUserRecords().map((record) => (
-                  <View key={record.id} style={styles.recordCard}>
-                    <View style={styles.recordHeader}>
-                      <Text style={styles.recordTitle}>{record.title}</Text>
-                      <View
-                        style={[
-                          styles.categoryBadge,
-                          {
-                            backgroundColor:
-                              colors.categories[record.category] ||
-                              colors.categories.Varsayilan,
-                          },
-                        ]}
-                      >
-                        <Text style={styles.categoryBadgeText}>
-                          {record.category}
-                        </Text>
-                      </View>
-                    </View>
-
-                    {record.genre ? (
-                      <Text style={styles.recordGenre}>{record.genre}</Text>
-                    ) : null}
-
-                    <View style={styles.recordDetailsRow}>
-                      <View style={styles.starsRow}>
-                        {renderStars(record.rating)}
-                      </View>
-                      <View style={styles.statusBadge}>
-                        <Text style={styles.statusBadgeText}>
-                          {record.status}
-                        </Text>
-                      </View>
-                    </View>
-
-                    {record.notes ? (
-                      <View style={styles.notesContainer}>
-                        <Text style={styles.notesLabel}>Notlar:</Text>
-                        <Text style={styles.notesText}>{record.notes}</Text>
-                      </View>
-                    ) : null}
-                  </View>
+                  <RecordCard 
+                    key={record.id} 
+                    item={record} 
+                    onView={() => {}} 
+                    onEdit={() => {}} 
+                    onDelete={() => {}} 
+                  />
                 ))
               )}
             </ScrollView>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Ban Şifre Onay Modalı */}
+      <Modal
+        visible={banModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setBanModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalCard, { maxHeight: 300, padding: 20 }]}>
+            <Text style={{ fontSize: 18, fontWeight: 'bold', color: colors.text, marginBottom: 10 }}>
+              Yönetici Onayı Gerekli
+            </Text>
+            <Text style={{ color: colors.textSecondary, marginBottom: 20 }}>
+              Kullanıcıyı engellemek için yönetici şifresini girin.
+            </Text>
+            
+            <TextInput
+              style={[styles.searchInput, { width: '100%', marginBottom: 20, backgroundColor: colors.background, paddingHorizontal: 15, paddingVertical: 10, borderRadius: 8, borderWidth: 1, borderColor: colors.border, color: colors.text }]}
+              placeholder="Yönetici Şifresi"
+              placeholderTextColor={colors.textMuted}
+              secureTextEntry
+              value={adminPasswordInput}
+              onChangeText={setAdminPasswordInput}
+            />
+
+            <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
+              <TouchableOpacity
+                style={{ paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8, backgroundColor: colors.surfaceLight }}
+                onPress={() => setBanModalVisible(false)}
+              >
+                <Text style={{ color: colors.textSecondary, fontWeight: 'bold' }}>İptal</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={{ paddingVertical: 10, paddingHorizontal: 20, borderRadius: 8, backgroundColor: '#EF4444' }}
+                onPress={confirmBan}
+              >
+                <Text style={{ color: '#fff', fontWeight: 'bold' }}>Engelle</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -838,6 +1024,26 @@ const styles = StyleSheet.native || StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border,
     ...Platform.select({ web: { cursor: 'pointer' } }),
+  },
+  tabBtn: {
+    flex: 1,
+    paddingVertical: 12,
+    alignItems: 'center',
+    borderBottomWidth: 2,
+    borderBottomColor: 'transparent',
+    ...Platform.select({ web: { cursor: 'pointer' } }),
+  },
+  tabBtnActive: {
+    borderBottomColor: colors.primary,
+  },
+  tabBtnText: {
+    fontSize: 14,
+    color: colors.textSecondary,
+    fontWeight: '600',
+  },
+  tabBtnTextActive: {
+    color: colors.primary,
+    fontWeight: 'bold',
   },
   filterPillActive: {
     backgroundColor: colors.primary + '18',
