@@ -83,15 +83,18 @@ const MainTabNavigator = () => (
           web: {
             backgroundColor: 'rgba(18, 18, 26, 0.85)',
             backdropFilter: 'blur(20px)',
+            height: 64,
+            paddingBottom: 10,
+            paddingTop: 8,
           },
           default: {
             backgroundColor: colors.surface,
+            height: 80,
+            paddingBottom: 20,
+            paddingTop: 8,
           },
         }),
         borderTopColor: colors.border,
-        height: 62,
-        paddingBottom: 8,
-        paddingTop: 8,
       },
       headerStyle: {
         ...Platform.select({
@@ -108,7 +111,7 @@ const MainTabNavigator = () => (
       },
       headerShown: false,
       tabBarLabelStyle: {
-        fontSize: 12,
+        fontSize: 10,
         fontWeight: '600',
       }
     })}
