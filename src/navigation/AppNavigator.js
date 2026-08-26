@@ -83,8 +83,8 @@ const MainTabNavigator = () => (
           web: {
             backgroundColor: 'rgba(18, 18, 26, 0.85)',
             backdropFilter: 'blur(20px)',
-            height: 64,
-            paddingBottom: 10,
+            height: 80,
+            paddingBottom: 24,
             paddingTop: 8,
           },
           default: {
