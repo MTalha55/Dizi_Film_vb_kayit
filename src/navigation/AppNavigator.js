@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, ActivityIndicator, StyleSheet, Platform, Alert } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, Platform, Alert, TouchableOpacity, Linking } from 'react-native';
 import { NavigationContainer, DarkTheme as NavigationDarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -59,84 +59,95 @@ const AuthStack = () => (
 
 // Ana Uygulama Sekmeleri (List, Add, Profile)
 const MainTabNavigator = () => (
-  <Tab.Navigator
-    screenOptions={({ route }) => ({
-      tabBarIcon: ({ focused, color, size }) => {
-        let iconName;
+  <View style={{ flex: 1 }}>
+    <Tab.Navigator
+      screenOptions={({ route }) => ({
+        tabBarIcon: ({ focused, color, size }) => {
+          let iconName;
 
-        if (route.name === 'List') {
-          iconName = focused ? 'list' : 'list-outline';
-        } else if (route.name === 'Add') {
-          iconName = focused ? 'add-circle' : 'add-circle-outline';
-        } else if (route.name === 'Discover') {
-          iconName = focused ? 'bulb' : 'bulb-outline';
-        } else if (route.name === 'Profile') {
-          iconName = focused ? 'person' : 'person-outline';
+          if (route.name === 'List') {
+            iconName = focused ? 'list' : 'list-outline';
+          } else if (route.name === 'Add') {
+            iconName = focused ? 'add-circle' : 'add-circle-outline';
+          } else if (route.name === 'Discover') {
+            iconName = focused ? 'bulb' : 'bulb-outline';
+          } else if (route.name === 'Profile') {
+            iconName = focused ? 'person' : 'person-outline';
+          }
+
+          return <Ionicons name={iconName} size={size} color={color} />;
+        },
+        tabBarActiveTintColor: colors.primaryLight,
+        tabBarInactiveTintColor: colors.textSecondary,
+        tabBarStyle: {
+          ...Platform.select({
+            web: {
+              backgroundColor: 'rgba(18, 18, 26, 0.85)',
+              backdropFilter: 'blur(20px)',
+              height: 80,
+              paddingBottom: 24,
+              paddingTop: 8,
+            },
+            default: {
+              backgroundColor: colors.surface,
+              height: 80,
+              paddingBottom: 20,
+              paddingTop: 8,
+            },
+          }),
+          borderTopColor: colors.border,
+        },
+        headerStyle: {
+          ...Platform.select({
+            web: { backgroundColor: 'rgba(18, 18, 26, 0.85)' },
+            default: { backgroundColor: colors.surface },
+          }),
+          shadowColor: 'transparent',
+          borderBottomWidth: 1,
+          borderBottomColor: colors.border,
+        },
+        headerTintColor: colors.text,
+        headerTitleStyle: {
+          fontWeight: 'bold',
+        },
+        headerShown: false,
+        tabBarLabelStyle: {
+          fontSize: 10,
+          fontWeight: '600',
         }
-
-        return <Ionicons name={iconName} size={size} color={color} />;
-      },
-      tabBarActiveTintColor: colors.primaryLight,
-      tabBarInactiveTintColor: colors.textSecondary,
-      tabBarStyle: {
-        ...Platform.select({
-          web: {
-            backgroundColor: 'rgba(18, 18, 26, 0.85)',
-            backdropFilter: 'blur(20px)',
-            height: 80,
-            paddingBottom: 24,
-            paddingTop: 8,
-          },
-          default: {
-            backgroundColor: colors.surface,
-            height: 80,
-            paddingBottom: 20,
-            paddingTop: 8,
-          },
-        }),
-        borderTopColor: colors.border,
-      },
-      headerStyle: {
-        ...Platform.select({
-          web: { backgroundColor: 'rgba(18, 18, 26, 0.85)' },
-          default: { backgroundColor: colors.surface },
-        }),
-        shadowColor: 'transparent',
-        borderBottomWidth: 1,
-        borderBottomColor: colors.border,
-      },
-      headerTintColor: colors.text,
-      headerTitleStyle: {
-        fontWeight: 'bold',
-      },
-      headerShown: false,
-      tabBarLabelStyle: {
-        fontSize: 10,
-        fontWeight: '600',
-      }
-    })}
-  >
-    <Tab.Screen 
-      name="List" 
-      component={ListScreen} 
-      options={{ title: 'İzleme Listesi' }}
-    />
-    <Tab.Screen 
-      name="Add" 
-      component={AddScreen} 
-      options={{ title: 'Kayıt Ekle' }}
-    />
-    <Tab.Screen 
-      name="Discover" 
-      component={DiscoverScreen} 
-      options={{ title: 'Keşfet' }}
-    />
-    <Tab.Screen 
-      name="Profile" 
-      component={ProfileScreen} 
-      options={{ title: 'Profilim' }}
-    />
-  </Tab.Navigator>
+      })}
+    >
+      <Tab.Screen 
+        name="List" 
+        component={ListScreen} 
+        options={{ title: 'İzleme Listesi' }}
+      />
+      <Tab.Screen 
+        name="Add" 
+        component={AddScreen} 
+        options={{ title: 'Kayıt Ekle' }}
+      />
+      <Tab.Screen 
+        name="Discover" 
+        component={DiscoverScreen} 
+        options={{ title: 'Keşfet' }}
+      />
+      <Tab.Screen 
+        name="Profile" 
+        component={ProfileScreen} 
+        options={{ title: 'Profilim' }}
+      />
+    </Tab.Navigator>
+    {/* Footer */}
+    <View style={styles.footer}>
+      <Text style={styles.footerText}>© 2026 WatchVault. Tüm hakları saklıdır.</Text>
+      <TouchableOpacity onPress={() => Linking.openURL('https://www.instagram.com/talha_krbs')}>
+        <Text style={styles.footerLink}>
+          <Ionicons name="logo-instagram" size={12} color={colors.primaryLight} /> @talha_krbs
+        </Text>
+      </TouchableOpacity>
+    </View>
+  </View>
 );
 
 // Ana Stack (Sekmeler + Detay Ekranı)
@@ -235,6 +246,26 @@ const styles = StyleSheet.create({
     backgroundColor: colors.background,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  footer: {
+    backgroundColor: colors.surface,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    paddingVertical: 8,
+    paddingBottom: Platform.OS === 'web' ? 12 : 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: 8,
+  },
+  footerText: {
+    color: colors.textMuted,
+    fontSize: 10,
+  },
+  footerLink: {
+    color: colors.primaryLight,
+    fontSize: 10,
+    fontWeight: '600',
   },
 });
 
