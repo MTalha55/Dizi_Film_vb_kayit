@@ -1,8 +1,8 @@
 // src/services/tmdb.js
 // TMDB API entegrasyonu için servis dosyası
 
-// TODO: Bu API Anahtarını geçerli bir anahtarla değiştireceğiz.
-const API_KEY = '90a28d316d19f4778ba4c4828d31eb45'; 
+// API Anahtarı .env dosyasından okunur
+const API_KEY = process.env.EXPO_PUBLIC_TMDB_API_KEY;
 const BASE_URL = 'https://api.themoviedb.org/3';
 const IMAGE_BASE_URL = 'https://image.tmdb.org/t/p/w500';
 

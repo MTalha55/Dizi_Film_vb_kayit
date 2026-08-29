@@ -120,7 +120,7 @@ const MainTabNavigator = () => (
     <Tab.Screen 
       name="List" 
       component={ListScreen} 
-      options={{ title: 'İzleme Listesi' }}
+      options={{ title: 'Listem' }}
     />
     <Tab.Screen 
       name="Add" 

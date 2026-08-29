@@ -16,6 +16,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { collection, addDoc, query, orderBy, onSnapshot, where } from 'firebase/firestore';
 import { auth, db } from '../firebase/config';
 import { colors, layout } from '../theme/colors';
+import { shareChatKey, encryptMessage, decryptMessage } from '../services/encryption';
 
 const ChatScreen = ({ route, navigation }) => {
   const { targetUserId, targetUserName } = route?.params || {};
@@ -34,10 +35,24 @@ const ChatScreen = ({ route, navigation }) => {
   const [messages, setMessages] = useState([]);
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(true);
+  const [chatKey, setChatKey] = useState(null);
   const flatListRef = useRef(null);
 
+  // Şifreleme anahtarını başlangıçta yükle
   useEffect(() => {
-    if (!currentUserId) return;
+    const loadKey = async () => {
+      try {
+        const key = await shareChatKey(chatId, db, currentUserId);
+        setChatKey(key);
+      } catch (error) {
+        console.error('Şifreleme anahtarı yükleme hatası:', error);
+      }
+    };
+    if (currentUserId) loadKey();
+  }, [currentUserId, chatId]);
+
+  useEffect(() => {
+    if (!currentUserId || !chatKey) return;
     
     const q = query(
       collection(db, 'messages'),
@@ -47,7 +62,10 @@ const ChatScreen = ({ route, navigation }) => {
     const unsubscribe = onSnapshot(q, (snapshot) => {
       const msgs = [];
       snapshot.forEach(doc => {
-        msgs.push({ id: doc.id, ...doc.data() });
+        const data = doc.data();
+        // Mesajı çözümle
+        const decryptedText = decryptMessage(data.text, chatKey);
+        msgs.push({ id: doc.id, ...data, text: decryptedText });
       });
       // Sort in memory to avoid Firebase composite index requirement
       msgs.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
@@ -65,19 +83,22 @@ const ChatScreen = ({ route, navigation }) => {
     });
 
     return unsubscribe;
-  }, [currentUserId, chatPartnerId]);
+  }, [currentUserId, chatPartnerId, chatKey]);
 
   const handleSend = async () => {
     const text = inputText.trim();
-    if (!text) return;
+    if (!text || !chatKey) return;
     setInputText('');
 
     try {
+      // Mesajı şifrele
+      const encryptedText = encryptMessage(text, chatKey);
+      
       await addDoc(collection(db, 'messages'), {
         chatId: chatId,
         senderId: currentUserId,
         receiverId: chatPartnerId,
-        text: text,
+        text: encryptedText,
         createdAt: new Date().toISOString()
       });
     } catch (error) {
@@ -94,7 +115,7 @@ const ChatScreen = ({ route, navigation }) => {
         <Text style={[styles.messageText, isMe ? styles.myText : styles.theirText]}>
           {item.text}
         </Text>
-        <Text style={styles.timeText}>
+        <Text style={[styles.timeText, !isMe && styles.theirTimeText]}>
           {new Date(item.createdAt).toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' })}
         </Text>
       </View>
@@ -112,6 +133,10 @@ const ChatScreen = ({ route, navigation }) => {
           <Text style={styles.headerTitle}>
             {isUserTalkingToAdmin ? 'Admin ile İletişim' : `${targetUserName || 'Kullanıcı'} ile Sohbet`}
           </Text>
+          <View style={styles.encryptionBadge}>
+            <Ionicons name="lock-closed" size={12} color={colors.success} />
+            <Text style={styles.encryptionText}>Uçtan uca şifreli</Text>
+          </View>
         </View>
         <View style={{ width: 40 }} />
       </View>
@@ -135,8 +160,13 @@ const ChatScreen = ({ route, navigation }) => {
             onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: true })}
             ListEmptyComponent={
               <View style={styles.center}>
-                <Ionicons name="chatbubbles-outline" size={48} color={colors.textMuted} />
-                <Text style={styles.emptyText}>Henüz mesaj yok. Sohbeti başlatın!</Text>
+                <View style={styles.lockIconCircle}>
+                  <Ionicons name="lock-closed" size={32} color={colors.success} />
+                </View>
+                <Text style={styles.emptyTitle}>Şifreli Sohbet</Text>
+                <Text style={styles.emptyText}>
+                  Mesajlarınız uçtan uca şifrelenmektedir.{'\n'}Sadece siz ve karşı taraf okuyabilir.
+                </Text>
               </View>
             }
           />
@@ -146,7 +176,7 @@ const ChatScreen = ({ route, navigation }) => {
         <View style={styles.inputContainer}>
           <TextInput
             style={styles.textInput}
-            placeholder="Mesajınızı yazın..."
+            placeholder="Şifreli mesajınızı yazın..."
             placeholderTextColor={colors.textMuted}
             value={inputText}
             onChangeText={setInputText}
@@ -193,15 +223,48 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: colors.text,
   },
+  encryptionBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginTop: 3,
+    backgroundColor: colors.success + '15',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 10,
+  },
+  encryptionText: {
+    fontSize: 10,
+    color: colors.success,
+    fontWeight: '600',
+  },
   center: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  lockIconCircle: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: colors.success + '15',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  emptyTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: colors.text,
+    marginBottom: 8,
   },
   emptyText: {
     color: colors.textMuted,
-    marginTop: 10,
-    fontSize: 14,
+    marginTop: 4,
+    fontSize: 13,
+    textAlign: 'center',
+    lineHeight: 20,
   },
   listContent: {
     padding: layout.spacing.md,
@@ -239,6 +302,9 @@ const styles = StyleSheet.create({
     color: 'rgba(255,255,255,0.6)',
     alignSelf: 'flex-end',
     marginTop: 4,
+  },
+  theirTimeText: {
+    color: colors.textMuted,
   },
   inputContainer: {
     flexDirection: 'row',

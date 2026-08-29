@@ -23,8 +23,14 @@ const ListScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Hepsi');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
+  const [activeTab, setActiveTab] = useState('İzliyorum');
 
-  const categories = ['Hepsi', 'Film', 'Dizi', 'Anime', 'Kore Dizisi'];
+  const categories = ['Hepsi', 'Film', 'Dizi', 'Kore Dizisi'];
+  const tabs = [
+    { key: 'İzliyorum', label: 'İzliyorum', icon: 'play-circle' },
+    { key: 'İzleyeceğim', label: 'İzleyeceğim', icon: 'time' },
+    { key: 'İzledim', label: 'İzlediklerim', icon: 'checkmark-circle' },
+  ];
 
   useEffect(() => {
     if (!auth.currentUser) return;
@@ -88,13 +94,19 @@ const ListScreen = ({ navigation }) => {
     }
   };
 
-  // Arama ve kategori filtrelemelerini uygula
+  // Arama, kategori ve sekme filtrelemelerini uygula
   const filteredRecords = records.filter(item => {
+    const matchesTab = item.status === activeTab;
     const matchesCategory = selectedCategory === 'Hepsi' || item.category === selectedCategory;
     const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFavorite = !showFavoritesOnly || item.isFavorite === true;
-    return matchesCategory && matchesSearch && matchesFavorite;
+    return matchesTab && matchesCategory && matchesSearch && matchesFavorite;
   });
+
+  // Her sekmedeki kayıt sayısını hesapla
+  const getTabCount = (tabKey) => {
+    return records.filter(item => item.status === tabKey).length;
+  };
 
   return (
     <View style={styles.container}>
@@ -116,6 +128,36 @@ const ListScreen = ({ navigation }) => {
             {auth.currentUser?.displayName ? auth.currentUser.displayName.charAt(0).toUpperCase() : 'U'}
           </Text>
         </TouchableOpacity>
+      </View>
+
+      {/* İzleme Durumu Sekmeleri */}
+      <View style={styles.tabContainer}>
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab.key;
+          const count = getTabCount(tab.key);
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              style={[styles.tabBtn, isActive && styles.tabBtnActive]}
+              onPress={() => setActiveTab(tab.key)}
+              activeOpacity={0.8}
+            >
+              <Ionicons 
+                name={isActive ? tab.icon : `${tab.icon}-outline`} 
+                size={18} 
+                color={isActive ? colors.primaryLight : colors.textSecondary} 
+              />
+              <Text style={[styles.tabBtnText, isActive && styles.tabBtnTextActive]}>
+                {tab.label}
+              </Text>
+              {count > 0 && (
+                <View style={[styles.tabBadge, isActive && styles.tabBadgeActive]}>
+                  <Text style={[styles.tabBadgeText, isActive && styles.tabBadgeTextActive]}>{count}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       {/* Arama Barı ve Favori Filtresi */}
@@ -194,7 +236,11 @@ const ListScreen = ({ navigation }) => {
           <View style={[styles.emptyIconCircle, { backgroundColor: colors.primary + '15' }]}>
             <Ionicons name="film-outline" size={54} color={colors.primaryLight} />
           </View>
-          <Text style={styles.emptyText}>Henüz hiç kayıt eklememişsiniz.</Text>
+          <Text style={styles.emptyText}>
+            {activeTab === 'İzliyorum' ? 'Şu an izlediğin bir yapım yok.' :
+             activeTab === 'İzleyeceğim' ? 'İzleme listende yapım yok.' :
+             'Henüz izlediğin bir yapım kaydetmemişsin.'}
+          </Text>
           <Text style={styles.emptySubtext}>
             {selectedCategory !== 'Hepsi' 
               ? `"${selectedCategory}" kategorisinde aranan yapım bulunamadı.` 
@@ -241,6 +287,60 @@ const styles = StyleSheet.native || StyleSheet.create({
         alignSelf: 'center',
       }
     })
+  },
+  // Tab Stilleri
+  tabContainer: {
+    flexDirection: 'row',
+    marginHorizontal: layout.spacing.md,
+    marginTop: layout.spacing.sm,
+    marginBottom: 4,
+    backgroundColor: colors.surfaceLight,
+    borderRadius: layout.borderRadius.md,
+    padding: 4,
+    borderWidth: 1,
+    borderColor: colors.border,
+  },
+  tabBtn: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 10,
+    borderRadius: layout.borderRadius.sm - 2,
+    gap: 5,
+  },
+  tabBtnActive: {
+    backgroundColor: colors.surface,
+    ...Platform.select({ web: { boxShadow: '0 2px 5px rgba(0,0,0,0.2)' } }),
+    elevation: 2,
+  },
+  tabBtnText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: colors.textSecondary,
+  },
+  tabBtnTextActive: {
+    color: colors.primaryLight,
+  },
+  tabBadge: {
+    backgroundColor: colors.glassInput,
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 5,
+  },
+  tabBadgeActive: {
+    backgroundColor: colors.primary + '25',
+  },
+  tabBadgeText: {
+    fontSize: 10,
+    fontWeight: '800',
+    color: colors.textMuted,
+  },
+  tabBadgeTextActive: {
+    color: colors.primaryLight,
   },
   searchRow: {
     flexDirection: 'row',

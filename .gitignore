@@ -31,11 +31,13 @@ yarn-error.*
 *.pem
 
 # local env files
+.env
 .env.local
 .env*.local
 
-# Firebase config (güvenlik Firestore kurallarıyla sağlanır)
-# google-services.json ve GoogleService-Info.plist artık takip ediliyor
+# Firebase config (güvenlik amaçlı gizli tutuluyor)
+google-services.json
+GoogleService-Info.plist
 
 # typescript
 *.tsbuildinfo

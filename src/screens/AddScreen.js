@@ -59,7 +59,7 @@ const AddScreen = ({ navigation }) => {
   const [loading, setLoading] = useState(false);
   const [errors, setErrors] = useState({});
 
-  const categories = ['Film', 'Dizi', 'Anime', 'Kore Dizisi'];
+  const categories = ['Film', 'Dizi', 'Kore Dizisi'];
   const statuses = ['İzledim', 'İzliyorum', 'İzleyeceğim'];
 
   const notify = (title, message, isSuccess = false) => {
@@ -144,7 +144,7 @@ const AddScreen = ({ navigation }) => {
         return;
       }
 
-      const isShow = category === 'Dizi' || category === 'Anime' || category === 'Kore Dizisi';
+      const isShow = category === 'Dizi' || category === 'Kore Dizisi';
       await addDoc(collection(db, "records"), {
         userId: auth.currentUser.uid,
         title: title.trim(),
@@ -374,7 +374,7 @@ const AddScreen = ({ navigation }) => {
                 </View>
 
                 {/* Dizi/Anime İlerleme Durumu */}
-                {(category === 'Dizi' || category === 'Anime' || category === 'Kore Dizisi') && (
+                {(category === 'Dizi' || category === 'Kore Dizisi') && (
                   <View style={styles.fieldContainer}>
                     <Text style={styles.label}>İlerleme Durumu</Text>
                     <View style={styles.trackerRow}>
