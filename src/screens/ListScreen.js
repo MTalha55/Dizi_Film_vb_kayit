@@ -25,7 +25,7 @@ const ListScreen = ({ navigation }) => {
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [activeTab, setActiveTab] = useState('İzliyorum');
 
-  const categories = ['Hepsi', 'Film', 'Dizi', 'Kore Dizisi'];
+  const categories = ['Hepsi', 'Film', 'Dizi', 'Anime', 'Kore Dizisi'];
   const tabs = [
     { key: 'İzliyorum', label: 'İzliyorum', icon: 'play-circle' },
     { key: 'İzleyeceğim', label: 'İzleyeceğim', icon: 'time' },

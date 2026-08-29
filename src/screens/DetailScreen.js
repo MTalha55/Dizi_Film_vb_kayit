@@ -54,7 +54,7 @@ const DetailScreen = ({ route, navigation }) => {
     }
   };
 
-  const categories = ['Film', 'Dizi', 'Kore Dizisi'];
+  const categories = ['Film', 'Dizi', 'Anime', 'Kore Dizisi'];
   const statuses = ['İzledim', 'İzliyorum', 'İzleyeceğim'];
 
   // Cross-platform Bildirim Yardımcısı
@@ -163,8 +163,8 @@ const DetailScreen = ({ route, navigation }) => {
         genres: selectedGenres,
         genre: selectedGenres.join(', '),
         isFavorite,
-        season: (category === 'Dizi' || category === 'Kore Dizisi') ? Number(season) : 0,
-        episode: (category === 'Dizi' || category === 'Kore Dizisi') ? Number(episode) : 0,
+        season: (category === 'Dizi' || category === 'Anime' || category === 'Kore Dizisi') ? Number(season) : 0,
+        episode: (category === 'Dizi' || category === 'Anime' || category === 'Kore Dizisi') ? Number(episode) : 0,
         updatedAt: new Date().toISOString()
       });
       setSaving(false);
@@ -410,7 +410,7 @@ const DetailScreen = ({ route, navigation }) => {
               </View>
 
               {/* Dizi/Anime İlerleme Durumu */}
-              {(category === 'Dizi' || category === 'Kore Dizisi') && (
+              {(category === 'Dizi' || category === 'Anime' || category === 'Kore Dizisi') && (
                 <View style={styles.fieldContainer}>
                   <Text style={styles.label}>İlerleme Durumu</Text>
                   <View style={styles.trackerRow}>
@@ -533,7 +533,8 @@ const DetailScreen = ({ route, navigation }) => {
                     <Ionicons 
                       name={
                         record.category === 'Film' ? 'film' : 
-                        record.category === 'Dizi' ? 'tv' : 'videocam'
+                        record.category === 'Dizi' ? 'tv' : 
+                        record.category === 'Anime' ? 'sparkles' : 'videocam'
                       }
                       size={80} 
                       color={getCategoryColor(record.category)} 
@@ -564,7 +565,7 @@ const DetailScreen = ({ route, navigation }) => {
                 <Text style={styles.detailTitle}>{record.title}</Text>
 
                 {/* Dizi/Anime İlerleme Durumu Hızlı Takip */}
-                {(record.category === 'Dizi' || record.category === 'Kore Dizisi') && (
+                {(record.category === 'Dizi' || record.category === 'Anime' || record.category === 'Kore Dizisi') && (
                   <View style={styles.quickTrackerContainer}>
                     <Text style={[styles.quickTrackerTitle, { color: colors.primaryLight }]}>İzleme İlerlemesi</Text>
                     <View style={styles.quickTrackerRow}>
