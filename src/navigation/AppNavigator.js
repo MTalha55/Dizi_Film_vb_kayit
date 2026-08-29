@@ -81,9 +81,9 @@ const MainTabNavigator = () => (
       tabBarInactiveTintColor: colors.textSecondary,
       tabBarStyle: {
         position: 'absolute',
-        bottom: Platform.OS === 'web' ? 24 : 32,
-        left: Platform.OS === 'web' ? '50%' : 20,
-        right: Platform.OS === 'web' ? 'auto' : 20,
+        bottom: Platform.OS === 'web' ? 24 : 16,
+        left: Platform.OS === 'web' ? '50%' : 16,
+        right: Platform.OS === 'web' ? 'auto' : 16,
         ...Platform.select({
           web: {
             transform: [{ translateX: '-50%' }],
@@ -91,14 +91,14 @@ const MainTabNavigator = () => (
             maxWidth: '90%',
           }
         }),
-        height: 64,
+        height: Platform.OS === 'ios' ? 80 : 70,
         backgroundColor: colors.glassFloating,
         borderRadius: layout.borderRadius.round,
         borderWidth: 1,
         borderColor: colors.borderLight,
         ...layout.shadows.md,
-        paddingBottom: 0,
-        paddingTop: 0,
+        paddingBottom: Platform.OS === 'ios' ? 20 : 6,
+        paddingTop: 6,
         ...Platform.select({
           web: {
             backdropFilter: 'blur(20px)',
@@ -108,7 +108,6 @@ const MainTabNavigator = () => (
       },
       tabBarItemStyle: {
         padding: 4,
-        marginVertical: 6,
         borderRadius: layout.borderRadius.round,
       },
       headerStyle: {

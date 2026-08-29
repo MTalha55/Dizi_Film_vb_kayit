@@ -9,7 +9,8 @@ import {
   TextInput, 
   ActivityIndicator, 
   Platform, 
-  Alert 
+  Alert,
+  SafeAreaView
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { collection, query, where, onSnapshot, doc, deleteDoc } from 'firebase/firestore';
@@ -111,7 +112,7 @@ const ListScreen = ({ navigation }) => {
   };
 
   return (
-    <View style={styles.container}>
+    <SafeAreaView style={styles.container}>
       {/* Ambient Glow */}
       <View style={[styles.ambientGlow, { backgroundColor: colors.primary }]} />
 
@@ -274,7 +275,7 @@ const ListScreen = ({ navigation }) => {
           ))}
         </ScrollView>
       )}
-    </View>
+    </SafeAreaView>
   );
 };
 
