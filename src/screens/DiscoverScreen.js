@@ -35,6 +35,8 @@ const DiscoverScreen = ({ navigation }) => {
   const [addCategory, setAddCategory] = useState('Film');
   const [addStatus, setAddStatus] = useState('İzleyeceğim');
   const [addRating, setAddRating] = useState(3);
+  const [addSeason, setAddSeason] = useState(1);
+  const [addEpisode, setAddEpisode] = useState(1);
   const [adding, setAdding] = useState(false);
 
   useEffect(() => {
@@ -99,9 +101,19 @@ const DiscoverScreen = ({ navigation }) => {
   const handleOpenDetail = (item) => {
     // Otomatik kategori tahmini: media_type veya varsa
     const mediaType = item.media_type || (item.first_air_date ? 'tv' : 'movie');
-    setAddCategory(mediaType === 'tv' ? 'Dizi' : 'Film');
+    let predictedCategory = mediaType === 'tv' ? 'Dizi' : 'Film';
+    
+    if (mediaType === 'tv' && item.origin_country && item.origin_country.includes('KR')) {
+      predictedCategory = 'Kore Dizisi';
+    } else if (item.origin_country && item.origin_country.includes('JP') && item.genre_ids && item.genre_ids.includes(16)) {
+      predictedCategory = 'Anime';
+    }
+
+    setAddCategory(predictedCategory);
     setAddStatus('İzleyeceğim');
     setAddRating(3);
+    setAddSeason(1);
+    setAddEpisode(1);
     setSelectedItem(item);
     setModalVisible(true);
   };
@@ -146,7 +158,7 @@ const DiscoverScreen = ({ navigation }) => {
         });
       }
 
-      const isShow = addCategory === 'Dizi' || addCategory === 'Kore Dizisi';
+      const isShow = addCategory === 'Dizi' || addCategory === 'Kore Dizisi' || addCategory === 'Anime';
       
       await addDoc(collection(db, "records"), {
         userId: auth.currentUser.uid,
@@ -159,8 +171,8 @@ const DiscoverScreen = ({ navigation }) => {
         genres: genreNames,
         genre: genreNames.join(', '),
         isFavorite: false,
-        season: isShow ? 1 : 0,
-        episode: isShow ? 1 : 0,
+        season: isShow ? addSeason : 0,
+        episode: isShow ? addEpisode : 0,
         createdAt: new Date().toISOString()
       });
 
@@ -378,6 +390,39 @@ const DiscoverScreen = ({ navigation }) => {
                     <Text style={styles.modalLabel}>Kişisel Puanım ({addRating}/5)</Text>
                     {renderStarSelector()}
                   </View>
+
+                  {/* Sezon ve Bölüm (Eğer Dizi/Kore Dizisi/Anime ise) */}
+                  {(addCategory === 'Dizi' || addCategory === 'Kore Dizisi' || addCategory === 'Anime') && (
+                    <View style={styles.modalFieldContainer}>
+                      <Text style={styles.modalLabel}>Sezon ve Bölüm</Text>
+                      <View style={{ flexDirection: 'row', gap: 16 }}>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Sezon</Text>
+                          <View style={styles.stepperContainer}>
+                            <TouchableOpacity onPress={() => setAddSeason(Math.max(1, addSeason - 1))} style={styles.stepperBtn} activeOpacity={0.7}>
+                              <Ionicons name="remove" size={16} color={colors.text} />
+                            </TouchableOpacity>
+                            <Text style={styles.stepperText}>{addSeason}</Text>
+                            <TouchableOpacity onPress={() => setAddSeason(addSeason + 1)} style={styles.stepperBtn} activeOpacity={0.7}>
+                              <Ionicons name="add" size={16} color={colors.text} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                        <View style={{ flex: 1 }}>
+                          <Text style={{ color: colors.textSecondary, fontSize: 11, marginBottom: 4 }}>Bölüm</Text>
+                          <View style={styles.stepperContainer}>
+                            <TouchableOpacity onPress={() => setAddEpisode(Math.max(1, addEpisode - 1))} style={styles.stepperBtn} activeOpacity={0.7}>
+                              <Ionicons name="remove" size={16} color={colors.text} />
+                            </TouchableOpacity>
+                            <Text style={styles.stepperText}>{addEpisode}</Text>
+                            <TouchableOpacity onPress={() => setAddEpisode(addEpisode + 1)} style={styles.stepperBtn} activeOpacity={0.7}>
+                              <Ionicons name="add" size={16} color={colors.text} />
+                            </TouchableOpacity>
+                          </View>
+                        </View>
+                      </View>
+                    </View>
+                  )}
 
                   {/* Kaydet Butonu */}
                   <TouchableOpacity 
@@ -623,10 +668,31 @@ const styles = StyleSheet.create({
     ...layout.shadows.md,
   },
   addToListBtnText: {
-    color: '#FFFFFF',
+    color: '#fff',
     fontSize: 16,
-    fontWeight: '800',
-    letterSpacing: 0.3,
+    fontWeight: 'bold',
+    marginLeft: 8,
+  },
+  stepperContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: layout.borderRadius.sm,
+    paddingHorizontal: 8,
+    paddingVertical: 6,
+  },
+  stepperBtn: {
+    padding: 4,
+    backgroundColor: colors.surfaceLight,
+    borderRadius: layout.borderRadius.xs,
+  },
+  stepperText: {
+    color: colors.text,
+    fontSize: 14,
+    fontWeight: 'bold',
   },
 });
 
