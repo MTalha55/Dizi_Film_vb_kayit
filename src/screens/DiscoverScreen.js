@@ -429,7 +429,7 @@ const styles = StyleSheet.create({
   center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   centerEmpty: { flex: 1, justifyContent: 'center', alignItems: 'center', marginTop: 50 },
   emptyText: { color: colors.textMuted },
-  list: { padding: layout.spacing.md, paddingBottom: 40 },
+  list: { padding: layout.spacing.md, paddingBottom: 100 },
   card: {
     flexDirection: 'row',
     backgroundColor: colors.surfaceLight,

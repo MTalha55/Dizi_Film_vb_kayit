@@ -80,26 +80,40 @@ const MainTabNavigator = () => (
       tabBarActiveTintColor: colors.primaryLight,
       tabBarInactiveTintColor: colors.textSecondary,
       tabBarStyle: {
+        position: 'absolute',
+        bottom: Platform.OS === 'web' ? 24 : 32,
+        left: Platform.OS === 'web' ? '50%' : 20,
+        right: Platform.OS === 'web' ? 'auto' : 20,
         ...Platform.select({
           web: {
-            backgroundColor: 'rgba(18, 18, 26, 0.85)',
-            backdropFilter: 'blur(20px)',
-            height: 64,
-            paddingBottom: 10,
-            paddingTop: 8,
-          },
-          default: {
-            backgroundColor: colors.surface,
-            height: 70, // Mobilde biraz daha yüksek ki kesilmesin
-            paddingBottom: 12, // Alt padding eklendi
-            paddingTop: 8,
-          },
+            transform: [{ translateX: '-50%' }],
+            width: 400,
+            maxWidth: '90%',
+          }
         }),
-        borderTopColor: colors.border,
+        height: 64,
+        backgroundColor: colors.glassFloating,
+        borderRadius: layout.borderRadius.round,
+        borderWidth: 1,
+        borderColor: colors.borderLight,
+        ...layout.shadows.md,
+        paddingBottom: 0,
+        paddingTop: 0,
+        ...Platform.select({
+          web: {
+            backdropFilter: 'blur(20px)',
+          }
+        }),
+        elevation: 10,
+      },
+      tabBarItemStyle: {
+        padding: 4,
+        marginVertical: 6,
+        borderRadius: layout.borderRadius.round,
       },
       headerStyle: {
         ...Platform.select({
-          web: { backgroundColor: 'rgba(18, 18, 26, 0.85)' },
+          web: { backgroundColor: colors.glassSurface },
           default: { backgroundColor: colors.surface },
         }),
         shadowColor: 'transparent',
@@ -108,12 +122,15 @@ const MainTabNavigator = () => (
       },
       headerTintColor: colors.text,
       headerTitleStyle: {
-        fontWeight: 'bold',
+        fontWeight: '900',
+        letterSpacing: 0.5,
       },
       headerShown: false,
+      tabBarShowLabel: true,
       tabBarLabelStyle: {
-        fontSize: 10, // Font boyutu 9'dan 10'a çıkarıldı okunabilirlik için
-        fontWeight: '600',
+        fontSize: 10,
+        fontWeight: '700',
+        marginTop: 2,
       }
     })}
   >

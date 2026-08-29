@@ -411,6 +411,7 @@ const styles = StyleSheet.native || StyleSheet.create({
   },
   listContainer: {
     padding: layout.spacing.md,
+    paddingBottom: 100, // Yüzen menü için ekstra boşluk
     ...Platform.select({
       web: {
         flexDirection: 'row',

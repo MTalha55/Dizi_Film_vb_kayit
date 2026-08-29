@@ -1,18 +1,18 @@
 import React, { useState } from 'react';
-import { StyleSheet, Text, View, Image, TouchableOpacity, Platform } from 'react-native';
+import { StyleSheet, Text, View, Image, TouchableOpacity, Platform, Dimensions } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { colors, layout } from '../theme/colors';
 
+const { width } = Dimensions.get('window');
+
 const RecordCard = ({ item, onView, onEdit, onDelete }) => {
-  const { title, category, status, rating, imageUrl, genre, genres } = item;
+  const { title, category, status, rating, imageUrl, genre, genres, isFavorite } = item;
   const [isHovered, setIsHovered] = useState(false);
 
-  // Kategori rengini belirle
   const getCategoryColor = () => {
     return colors.categories[category] || colors.categories.Varsayilan;
   };
 
-  // İzleme durumu etiket metni ve rengi
   const getStatusTextAndColor = () => {
     switch (status) {
       case 'İzledim':
@@ -27,7 +27,6 @@ const RecordCard = ({ item, onView, onEdit, onDelete }) => {
 
   const statusInfo = getStatusTextAndColor();
 
-  // Puan yıldızlarını çiz
   const renderStars = () => {
     const stars = [];
     const maxStars = 5;
@@ -45,23 +44,29 @@ const RecordCard = ({ item, onView, onEdit, onDelete }) => {
     return stars;
   };
 
+  const isWeb = Platform.OS === 'web';
+
   return (
     <View 
       style={[
         styles.card,
-        isHovered && Platform.OS === 'web' && styles.cardHovered,
-        isHovered && {
-          borderColor: colors.primaryLight,
-          shadowColor: colors.primary,
-          ...(Platform.OS === 'web' && { boxShadow: `0 8px 24px ${colors.primary}25` })
+        isHovered && isWeb && styles.cardHovered,
+        isHovered && isWeb && {
+          borderColor: colors.borderLight,
+          shadowColor: getCategoryColor(),
+          boxShadow: `0 12px 32px ${getCategoryColor()}30`
         }
       ]}
       onMouseEnter={() => setIsHovered(true)}
       onMouseLeave={() => setIsHovered(false)}
     >
       <View style={styles.row}>
-        {/* Poster / Görsel Alanı */}
-        <View style={[styles.posterContainer, { borderColor: getCategoryColor() + '40' }]}>
+        {/* Poster */}
+        <TouchableOpacity 
+          style={styles.posterContainer}
+          activeOpacity={0.8}
+          onPress={onView}
+        >
           {imageUrl && (imageUrl.trim().startsWith('http') || imageUrl.trim().startsWith('data:') || imageUrl.trim().startsWith('file:')) ? (
             <Image
               source={{ uri: imageUrl }}
@@ -69,40 +74,42 @@ const RecordCard = ({ item, onView, onEdit, onDelete }) => {
               resizeMode="cover"
             />
           ) : (
-            <View style={[styles.posterPlaceholder, { backgroundColor: getCategoryColor() + '08' }]}>
+            <View style={[styles.posterPlaceholder, { backgroundColor: getCategoryColor() + '15' }]}>
               <Ionicons
                 name={
-                  category === 'Film' ? 'film-outline' :
-                  category === 'Dizi' ? 'tv-outline' :
-                  category === 'Anime' ? 'sparkles-outline' :
-                  'videocam-outline'
+                  category === 'Film' ? 'film' :
+                  category === 'Dizi' ? 'tv' :
+                  category === 'Anime' ? 'sparkles' :
+                  'videocam'
                 }
-                size={32}
+                size={36}
                 color={getCategoryColor()}
               />
             </View>
           )}
-        </View>
+          {/* Karanlık Gradyan Efekti - Posterin altına gölge */}
+          <View style={styles.posterOverlay} />
+        </TouchableOpacity>
 
-        {/* Bilgi Alanı */}
+        {/* Bilgi */}
         <View style={styles.infoContainer}>
           <View style={styles.headerRow}>
-            {/* Kategori Rozeti */}
-            <View style={[styles.badge, { backgroundColor: getCategoryColor() + '10', borderColor: getCategoryColor() + '40' }]}>
+            {/* Kategori */}
+            <View style={[styles.badge, { backgroundColor: getCategoryColor() + '15', borderColor: getCategoryColor() + '40' }]}>
               <Text style={[styles.badgeText, { color: getCategoryColor() }]}>
                 {category}
               </Text>
             </View>
 
-            {/* Favori Rozeti */}
-            {item.isFavorite && (
-              <View style={[styles.badge, { backgroundColor: colors.accent + '15', borderColor: colors.accent + '60', paddingHorizontal: 4, flexDirection: 'row', alignItems: 'center' }]}>
-                <Ionicons name="star" size={8} color={colors.accent} />
+            {/* Favori */}
+            {isFavorite && (
+              <View style={[styles.badge, { backgroundColor: colors.accent + '20', borderColor: colors.accent + '60', paddingHorizontal: 6, flexDirection: 'row', alignItems: 'center' }]}>
+                <Ionicons name="star" size={10} color={colors.accent} />
               </View>
             )}
             
-            {/* İzleme Durumu Rozeti */}
-            <View style={[styles.statusBadge, { backgroundColor: statusInfo.color + '08', borderColor: statusInfo.color + '35' }]}>
+            {/* Durum */}
+            <View style={[styles.statusBadge, { backgroundColor: statusInfo.color + '15', borderColor: statusInfo.color + '35' }]}>
               <View style={[styles.statusDot, { backgroundColor: statusInfo.color }]} />
               <Text style={[styles.statusBadgeText, { color: statusInfo.color }]}>
                 {statusInfo.text}
@@ -110,19 +117,18 @@ const RecordCard = ({ item, onView, onEdit, onDelete }) => {
             </View>
           </View>
 
-          {/* Başlık */}
-          <Text style={styles.title} numberOfLines={2}>
-            {title}
-          </Text>
+          <TouchableOpacity onPress={onView} activeOpacity={0.7}>
+            <Text style={styles.title} numberOfLines={2}>
+              {title}
+            </Text>
+          </TouchableOpacity>
 
-          {/* Tür Bilgisi */}
           {((genres && genres.length > 0) || (genre && genre.trim() !== '')) && (
             <Text style={styles.genreText} numberOfLines={1}>
-              🎬 {Array.isArray(genres) ? genres.join(', ') : genre}
+              {Array.isArray(genres) ? genres.join(' • ') : genre.replace(/,/g, ' • ')}
             </Text>
           )}
 
-          {/* Yıldız Değerlendirmesi */}
           <View style={styles.ratingRow}>
             {renderStars()}
             <Text style={styles.ratingText}>{rating}/5</Text>
@@ -130,32 +136,24 @@ const RecordCard = ({ item, onView, onEdit, onDelete }) => {
         </View>
       </View>
 
-      {/* Aksiyon Butonları Alt Satırı */}
+      {/* Aksiyonlar */}
       <View style={styles.actionRow}>
-        <TouchableOpacity 
-          style={styles.actionBtn} 
-          onPress={onView}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="eye-outline" size={16} color={colors.textSecondary} />
-          <Text style={styles.actionBtnText}>Detay</Text>
+        <TouchableOpacity style={styles.actionBtn} onPress={onView} activeOpacity={0.6}>
+          <Ionicons name="eye" size={18} color={colors.textSecondary} />
+          <Text style={styles.actionBtnText}>İncele</Text>
+        </TouchableOpacity>
+        
+        <View style={styles.actionDivider} />
+
+        <TouchableOpacity style={styles.actionBtn} onPress={onEdit} activeOpacity={0.6}>
+          <Ionicons name="create" size={18} color={colors.primaryLight} />
+          <Text style={[styles.actionBtnText, { color: colors.primaryLight }]}>Düzenle</Text>
         </TouchableOpacity>
 
-        <TouchableOpacity 
-          style={styles.actionBtn} 
-          onPress={onEdit}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="create-outline" size={16} color={colors.primaryLight} />
-          <Text style={[styles.actionBtnText, { color: colors.primaryLight }]}>Güncelle</Text>
-        </TouchableOpacity>
+        <View style={styles.actionDivider} />
 
-        <TouchableOpacity 
-          style={[styles.actionBtn, styles.deleteBtn]} 
-          onPress={onDelete}
-          activeOpacity={0.7}
-        >
-          <Ionicons name="trash-outline" size={16} color={colors.secondary} />
+        <TouchableOpacity style={styles.actionBtn} onPress={onDelete} activeOpacity={0.6}>
+          <Ionicons name="trash" size={18} color={colors.secondary} />
           <Text style={[styles.actionBtnText, { color: colors.secondary }]}>Sil</Text>
         </TouchableOpacity>
       </View>
@@ -163,44 +161,40 @@ const RecordCard = ({ item, onView, onEdit, onDelete }) => {
   );
 };
 
-const styles = StyleSheet.native || StyleSheet.create({
+const isWeb = Platform.OS === 'web';
+
+const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.glassSurface,
     borderRadius: layout.borderRadius.md,
     borderWidth: 1,
     borderColor: colors.border,
-    padding: layout.spacing.md,
+    padding: 12,
     marginBottom: layout.spacing.md,
-    ...layout.shadows.sm,
-    width: Platform.OS === 'web' ? 320 : '100%',
+    width: isWeb ? 340 : '100%',
+    ...layout.shadows.md,
     ...Platform.select({
       web: {
-        transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-        backdropFilter: 'blur(12px)',
+        transition: 'all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1)',
+        backdropFilter: 'blur(16px)',
       }
     })
   },
   cardHovered: {
-    borderColor: colors.primaryLight,
-    transform: [{ translateY: -4 }],
-    ...Platform.select({
-      web: {
-        boxShadow: `0 8px 24px ${colors.primary}25`,
-      }
-    }),
-    ...layout.shadows.md,
+    transform: [{ translateY: -6 }, { scale: 1.02 }],
   },
   row: {
     flexDirection: 'row',
   },
   posterContainer: {
-    width: 76,
-    height: 110,
+    width: 85,
+    height: 125,
     borderRadius: layout.borderRadius.sm,
     overflow: 'hidden',
     backgroundColor: colors.surfaceLight,
-    borderWidth: 1.5,
-    borderColor: colors.border,
+    borderWidth: 1,
+    borderColor: colors.borderLight,
+    ...layout.shadows.sm,
   },
   poster: {
     width: '100%',
@@ -212,106 +206,118 @@ const styles = StyleSheet.native || StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
+  posterOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.1)',
+  },
   infoContainer: {
     flex: 1,
     marginLeft: layout.spacing.md,
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     paddingVertical: 2,
   },
   headerRow: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
-    gap: 6,
+    gap: 8,
+    marginBottom: 6,
   },
   badge: {
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: layout.borderRadius.xs,
     borderWidth: 1,
   },
   badgeText: {
     fontSize: 9,
-    fontWeight: '800',
+    fontWeight: '900',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
   },
   statusBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: 8,
-    paddingVertical: 2,
+    paddingVertical: 3,
     borderRadius: layout.borderRadius.xs,
     borderWidth: 1,
   },
   statusDot: {
-    width: 5,
-    height: 5,
-    borderRadius: 2.5,
-    marginRight: 4,
+    width: 6,
+    height: 6,
+    borderRadius: 3,
+    marginRight: 6,
   },
   statusBadgeText: {
     fontSize: 9,
-    fontWeight: '700',
+    fontWeight: '800',
     textTransform: 'uppercase',
     letterSpacing: 0.5,
   },
   title: {
-    fontSize: 15,
-    fontWeight: '800',
+    fontSize: 16,
+    fontWeight: '900',
     color: colors.text,
-    marginVertical: 4,
-    lineHeight: 20,
+    marginBottom: 6,
+    lineHeight: 22,
+    letterSpacing: 0.3,
   },
   genreText: {
-    fontSize: 11,
+    fontSize: 12,
     color: colors.textSecondary,
-    marginBottom: 4,
-    fontWeight: '500',
+    marginBottom: 8,
+    fontWeight: '600',
   },
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: colors.glassInput,
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: layout.borderRadius.round,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
   ratingText: {
-    fontSize: 11,
-    color: colors.textSecondary,
+    fontSize: 12,
+    color: colors.text,
     marginLeft: 6,
-    fontWeight: '700',
+    fontWeight: '800',
   },
   actionRow: {
     flexDirection: 'row',
     borderTopWidth: 1,
     borderTopColor: colors.border,
-    marginTop: layout.spacing.md,
-    paddingTop: layout.spacing.sm,
-    justifyContent: 'space-between',
-    gap: 8,
+    marginTop: 12,
+    paddingTop: 12,
+    justifyContent: 'space-evenly',
+    alignItems: 'center',
   },
   actionBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     flex: 1,
-    paddingVertical: 6,
-    borderRadius: layout.borderRadius.xs,
-    backgroundColor: 'rgba(255, 255, 255, 0.02)',
-    borderWidth: 1,
-    borderColor: 'transparent',
+    paddingVertical: 4,
     ...Platform.select({
       web: {
-        transition: 'all 0.2s ease',
+        transition: 'opacity 0.2s',
       }
     })
   },
   actionBtnText: {
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: 13,
+    fontWeight: '800',
     color: colors.textSecondary,
-    marginLeft: 4,
+    marginLeft: 6,
+    letterSpacing: 0.3,
   },
-  deleteBtn: {
-    //
+  actionDivider: {
+    width: 1,
+    height: '80%',
+    backgroundColor: colors.border,
   }
 });
 

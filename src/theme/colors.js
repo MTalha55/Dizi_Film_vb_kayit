@@ -2,11 +2,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Platform } from 'react-native';
 
 export const accentThemes = {
-  purple: { primary: '#8A2BE2', primaryLight: '#A855F7', borderActive: '#8A2BE2' },
-  blue: { primary: '#3B82F6', primaryLight: '#60A5FA', borderActive: '#3B82F6' },
-  green: { primary: '#10B981', primaryLight: '#34D399', borderActive: '#10B981' },
-  pink: { primary: '#EC4899', primaryLight: '#F472B6', borderActive: '#EC4899' },
-  gold: { primary: '#FFB800', primaryLight: '#FBBF24', borderActive: '#FFB800' }
+  purple: { primary: '#8A2BE2', primaryLight: '#B983FF', borderActive: '#8A2BE2' },
+  blue: { primary: '#2563EB', primaryLight: '#60A5FA', borderActive: '#3B82F6' },
+  green: { primary: '#059669', primaryLight: '#34D399', borderActive: '#10B981' },
+  pink: { primary: '#DB2777', primaryLight: '#F472B6', borderActive: '#EC4899' },
+  gold: { primary: '#D97706', primaryLight: '#FBBF24', borderActive: '#F59E0B' }
 };
 
 let currentTheme = { ...accentThemes.purple };
@@ -39,7 +39,6 @@ export const changeTheme = async (name) => {
   }
 };
 
-// AsyncStorage'dan temayı yükle
 export const initTheme = async () => {
   try {
     const saved = await AsyncStorage.getItem('user_theme_accent_color');
@@ -54,87 +53,96 @@ export const initTheme = async () => {
 };
 
 export const colors = {
-  background: '#06060A',        // Derin uzay siyahı / sinema arka planı
-  surface: '#0F0F16',           // Kart ve yüzeylerin koyu eflatun-gri tonu
-  surfaceLight: '#181824',      // Daha açık kart arka planı / input alanları
-  border: '#222232',            // İnce kenarlık çizgileri
+  background: '#040406',        // Ultra derin sinema siyahı
+  surface: '#0B0B11',           // İkincil çok koyu arka plan
+  surfaceLight: '#12121C',      // Kart içi boşluklar / hafif aydınlık
+  border: '#1E1E2D',            // Kenarlıklar için çok hafif belirgin gri
+  borderLight: '#2C2C40',       // Hover veya focus durumları için daha açık kenarlık
   
-  // Dinamik Getter Rengleri
+  // Dinamik Temalar
   get primary() { return currentTheme.primary; },
   get primaryLight() { return currentTheme.primaryLight; },
   get borderActive() { return currentTheme.borderActive; },
   
-  secondary: '#FF2E93',         // Neon Pembe / Mercan (İkincil uyarı/vurgu)
-  accent: '#FFB800',            // Sinematik Altın Sarısı (Puanlama ve yıldızlar)
+  secondary: '#F43F5E',         // Canlı Gül Kurusu / Kırmızı (Silme ve uyarılar için daha yumuşak)
+  accent: '#FBBF24',            // Parlak Altın Sarısı
   
-  success: '#10B981',           // Yeşil (Başarılı bildirimler)
-  danger: '#EF4444',            // Kırmızı (Hatalar ve silme butonları)
-  info: '#3B82F6',              // Mavi (Bilgi durumları)
+  success: '#10B981',           // Mint Yeşili
+  danger: '#EF4444',            // Hata Kırmızı
+  info: '#3B82F6',              // Gökyüzü Mavisi
   
-  text: '#FFFFFF',              // Birincil Beyaz Metin
-  textSecondary: '#A1A1AA',     // İkincil Gri Metin
-  textMuted: '#71717A',         // Soluk Yardımcı Metin
-  textDark: '#06060A',          // Koyu metinler için
+  text: '#F8FAFC',              // Göz yormayan, saf beyaz olmayan metin
+  textSecondary: '#94A3B8',     // Kül grisi alt metinler
+  textMuted: '#475569',         // İyice soluk, okuması çok dikkat gerektirmeyen veriler
+  textDark: '#020617',          // Koyu metinler için
   
-  // Cam efektli yarı saydam arka planlar
-  glassSurface: 'rgba(15, 15, 22, 0.75)',
-  glassInput: 'rgba(24, 24, 36, 0.5)',
+  // Glassmorphism Efektleri
+  glassSurface: 'rgba(11, 11, 17, 0.65)',
+  glassInput: 'rgba(18, 18, 28, 0.5)',
+  glassFloating: 'rgba(20, 20, 30, 0.85)',
   
   get glassPill() {
     const hex = currentTheme.primary;
     const r = parseInt(hex.slice(1, 3), 16);
     const g = parseInt(hex.slice(3, 5), 16);
     const b = parseInt(hex.slice(5, 7), 16);
-    return `rgba(${r}, ${g}, ${b}, 0.1)`;
+    return `rgba(${r}, ${g}, ${b}, 0.15)`;
+  },
+
+  get glassGlow() {
+    const hex = currentTheme.primary;
+    const r = parseInt(hex.slice(1, 3), 16);
+    const g = parseInt(hex.slice(3, 5), 16);
+    const b = parseInt(hex.slice(5, 7), 16);
+    return `rgba(${r}, ${g}, ${b}, 0.3)`;
   },
   
-  // Kategori renkleri (Filtreleme ve kart rozetleri için)
   categories: {
-    Film: '#3B82F6',            // Mavi
-    Dizi: '#10B981',            // Yeşil
-    Anime: '#8A2BE2',           // Mor
-    'Kore Dizisi': '#EC4899',   // Pembe
-    Varsayilan: '#71717A'
+    Film: '#3B82F6',
+    Dizi: '#10B981',
+    Anime: '#8A2BE2',
+    'Kore Dizisi': '#EC4899',
+    Varsayilan: '#64748B'
   }
 };
 
 export const layout = {
   borderRadius: {
-    xs: 6,
-    sm: 10,
-    md: 14,
-    lg: 20,
-    xl: 28,
+    xs: 8,
+    sm: 12,
+    md: 16,
+    lg: 24,
+    xl: 32,
     round: 9999
   },
   spacing: {
-    xs: 4,
-    sm: 8,
-    md: 16,
-    lg: 24,
-    xl: 32
+    xs: 6,
+    sm: 10,
+    md: 18,
+    lg: 28,
+    xl: 40
   },
   shadows: {
     sm: {
       shadowColor: '#000000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.2,
-      shadowRadius: 3,
-      elevation: 2
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.3,
+      shadowRadius: 8,
+      elevation: 4
     },
     md: {
       get shadowColor() { return currentTheme.primary; },
-      shadowOffset: { width: 0, height: 4 },
-      shadowOpacity: 0.3,
-      shadowRadius: 10,
-      elevation: 6
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.25,
+      shadowRadius: 16,
+      elevation: 8
     },
     lg: {
       get shadowColor() { return currentTheme.primary; },
-      shadowOffset: { width: 0, height: 12 },
-      shadowOpacity: 0.45,
-      shadowRadius: 20,
-      elevation: 12
+      shadowOffset: { width: 0, height: 16 },
+      shadowOpacity: 0.35,
+      shadowRadius: 32,
+      elevation: 16
     }
   }
 };
