@@ -23,13 +23,14 @@ const ListScreen = ({ navigation }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Hepsi');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
-  const [activeTab, setActiveTab] = useState('İzliyorum');
+  const [activeTab, setActiveTab] = useState('Hepsi');
 
   const categories = ['Hepsi', 'Film', 'Dizi', 'Anime', 'Kore Dizisi'];
   const tabs = [
+    { key: 'Hepsi', label: 'Hepsi', icon: 'layers' },
+    { key: 'İzledim', label: 'İzlediklerim', icon: 'checkmark-circle' },
     { key: 'İzliyorum', label: 'İzliyorum', icon: 'play-circle' },
     { key: 'İzleyeceğim', label: 'İzleyeceğim', icon: 'time' },
-    { key: 'İzledim', label: 'İzlediklerim', icon: 'checkmark-circle' },
   ];
 
   useEffect(() => {
@@ -96,7 +97,7 @@ const ListScreen = ({ navigation }) => {
 
   // Arama, kategori ve sekme filtrelemelerini uygula
   const filteredRecords = records.filter(item => {
-    const matchesTab = item.status === activeTab;
+    const matchesTab = activeTab === 'Hepsi' || item.status === activeTab;
     const matchesCategory = selectedCategory === 'Hepsi' || item.category === selectedCategory;
     const matchesSearch = item.title.toLowerCase().includes(searchQuery.toLowerCase());
     const matchesFavorite = !showFavoritesOnly || item.isFavorite === true;
@@ -105,6 +106,7 @@ const ListScreen = ({ navigation }) => {
 
   // Her sekmedeki kayıt sayısını hesapla
   const getTabCount = (tabKey) => {
+    if (tabKey === 'Hepsi') return records.length;
     return records.filter(item => item.status === tabKey).length;
   };
 
