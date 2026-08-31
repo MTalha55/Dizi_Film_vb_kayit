@@ -98,7 +98,7 @@ const DiscoverScreen = ({ navigation }) => {
     }
   };
 
-  const handleOpenDetail = (item) => {
+  const handleOpenDetail = async (item) => {
     // Otomatik kategori tahmini: media_type veya varsa
     const mediaType = item.media_type || (item.first_air_date ? 'tv' : 'movie');
     let predictedCategory = mediaType === 'tv' ? 'Dizi' : 'Film';
@@ -116,6 +116,29 @@ const DiscoverScreen = ({ navigation }) => {
     setAddEpisode(1);
     setSelectedItem(item);
     setModalVisible(true);
+
+    // Eğer dizi ise TMDB'den ekstra detayları (toplam sezon/bölüm) asenkron olarak çek
+    if (mediaType === 'tv' && item.id) {
+      try {
+        const detailRes = await fetch(`${BASE_URL}/tv/${item.id}?api_key=${API_KEY}&language=tr-TR`);
+        const detailData = await detailRes.json();
+        if (detailData.number_of_seasons !== undefined) {
+          setSelectedItem(prev => {
+            // Modal hala açık ve aynı diziye bakıyorsak güncelle
+            if (prev && prev.id === item.id) {
+              return {
+                ...prev,
+                total_seasons: detailData.number_of_seasons,
+                total_episodes: detailData.number_of_episodes
+              };
+            }
+            return prev;
+          });
+        }
+      } catch (error) {
+        console.error("Dizi detayları alınamadı:", error);
+      }
+    }
   };
 
   const handleAddToList = async () => {
@@ -318,6 +341,24 @@ const DiscoverScreen = ({ navigation }) => {
                       </Text>
                     </View>
                   </View>
+
+                  {/* Dizi Detayları (Toplam Sezon/Bölüm) */}
+                  {selectedItem.total_seasons !== undefined && (
+                    <View style={[styles.modalMetaRow, { marginTop: 4 }]}>
+                      <View style={[styles.metaBadge, { borderColor: colors.primary }]}>
+                        <Ionicons name="tv-outline" size={14} color={colors.primaryLight} />
+                        <Text style={[styles.metaBadgeText, { color: colors.primaryLight }]}>
+                          {selectedItem.total_seasons} Sezon
+                        </Text>
+                      </View>
+                      <View style={[styles.metaBadge, { borderColor: colors.primary }]}>
+                        <Ionicons name="film-outline" size={14} color={colors.primaryLight} />
+                        <Text style={[styles.metaBadgeText, { color: colors.primaryLight }]}>
+                          {selectedItem.total_episodes} Bölüm
+                        </Text>
+                      </View>
+                    </View>
+                  )}
 
                   {/* Özet */}
                   <View style={styles.modalSection}>
