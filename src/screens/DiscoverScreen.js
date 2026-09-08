@@ -12,7 +12,8 @@ import {
   Modal,
   ScrollView,
   Alert,
-  Dimensions
+  Dimensions,
+  useWindowDimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { collection, query, where, getDocs, addDoc } from 'firebase/firestore';
@@ -38,6 +39,14 @@ const DiscoverScreen = ({ navigation }) => {
   const [addSeason, setAddSeason] = useState(1);
   const [addEpisode, setAddEpisode] = useState(1);
   const [adding, setAdding] = useState(false);
+
+  const { width } = useWindowDimensions();
+  let numColumns = 2;
+  if (width >= 1024) numColumns = 5;
+  else if (width >= 768) numColumns = 4;
+  else if (width >= 600) numColumns = 3;
+  else numColumns = 2;
+
 
   useEffect(() => {
     fetchRecommendations();
@@ -238,16 +247,12 @@ const DiscoverScreen = ({ navigation }) => {
         style={styles.poster}
       />
       <View style={styles.info}>
-        <Text style={styles.title} numberOfLines={2}>{item.title || item.name}</Text>
-        <Text style={styles.year}>{(item.release_date || item.first_air_date || '').substring(0, 4)}</Text>
+        <Text style={styles.title} numberOfLines={1}>{item.title || item.name}</Text>
         <View style={styles.ratingRow}>
-          <Ionicons name="star" size={14} color="#F59E0B" />
+          <Ionicons name="star" size={12} color="#F59E0B" />
           <Text style={styles.ratingText}>{item.vote_average?.toFixed(1)}/10</Text>
         </View>
-        <Text style={styles.overview} numberOfLines={3}>{item.overview || 'Özet bulunmuyor.'}</Text>
-      </View>
-      <View style={styles.arrowContainer}>
-        <Ionicons name="chevron-forward" size={20} color={colors.textSecondary} />
+        <Text style={styles.year}>{(item.release_date || item.first_air_date || '').substring(0, 4)}</Text>
       </View>
     </TouchableOpacity>
   );
@@ -274,7 +279,10 @@ const DiscoverScreen = ({ navigation }) => {
         </View>
       ) : (
         <FlatList
+          key={numColumns}
+          numColumns={numColumns}
           data={recommendations}
+          columnWrapperStyle={numColumns > 1 ? { gap: 12 } : undefined}
           keyExtractor={(item) => item.id.toString()}
           renderItem={renderItem}
           contentContainerStyle={styles.list}
@@ -374,29 +382,23 @@ const DiscoverScreen = ({ navigation }) => {
                   {/* LİSTEYE EKLEME ALANI */}
                   <Text style={styles.addSectionTitle}>📋 Listeme Ekle</Text>
 
-                  {/* Kategori Seçimi */}
+                  {/* Kategori Seçimi (TMDB'den Otomatik Alındı) */}
                   <View style={styles.modalFieldContainer}>
                     <Text style={styles.modalLabel}>Kategori</Text>
                     <View style={styles.selectorGroup}>
-                      {categories.map((cat) => {
-                        const isSelected = addCategory === cat;
-                        const catColor = colors.categories[cat] || colors.primary;
-                        return (
-                          <TouchableOpacity
-                            key={cat}
-                            onPress={() => setAddCategory(cat)}
-                            style={[
-                              styles.selectorBtn,
-                              isSelected && { backgroundColor: catColor + '20', borderColor: catColor }
-                            ]}
-                            activeOpacity={0.8}
-                          >
-                            <Text style={[styles.selectorBtnText, isSelected && { color: catColor, fontWeight: 'bold' }]}>
-                              {cat}
-                            </Text>
-                          </TouchableOpacity>
-                        );
-                      })}
+                      <View
+                        style={[
+                          styles.selectorBtn,
+                          { 
+                            backgroundColor: (colors.categories[addCategory] || colors.primary) + '20', 
+                            borderColor: colors.categories[addCategory] || colors.primary 
+                          }
+                        ]}
+                      >
+                        <Text style={[styles.selectorBtnText, { color: colors.categories[addCategory] || colors.primary, fontWeight: 'bold' }]}>
+                          {addCategory}
+                        </Text>
+                      </View>
                     </View>
                   </View>
 
@@ -517,53 +519,45 @@ const styles = StyleSheet.create({
   emptyText: { color: colors.textMuted },
   list: { padding: layout.spacing.md, paddingBottom: 100 },
   card: {
-    flexDirection: 'row',
+    flex: 1,
+    marginVertical: 6,
     backgroundColor: colors.surfaceLight,
     borderRadius: layout.borderRadius.md,
-    marginBottom: 12,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: colors.border,
   },
   poster: {
-    width: 100,
-    height: 150,
+    width: '100%',
+    aspectRatio: 2 / 3,
   },
   info: {
-    flex: 1,
-    padding: 12,
+    padding: 8,
+    alignItems: 'center',
     justifyContent: 'center',
   },
   title: {
-    fontSize: 16,
+    fontSize: 13,
     fontWeight: 'bold',
     color: colors.text,
     marginBottom: 4,
+    textAlign: 'center',
   },
   year: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.textSecondary,
-    marginBottom: 6,
+    textAlign: 'center',
   },
   ratingRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   ratingText: {
-    fontSize: 12,
+    fontSize: 11,
     color: colors.text,
     marginLeft: 4,
     fontWeight: 'bold',
-  },
-  overview: {
-    fontSize: 12,
-    color: colors.textMuted,
-  },
-  arrowContainer: {
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingRight: 10,
   },
 
   // Modal Stilleri
