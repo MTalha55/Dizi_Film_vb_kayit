@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, ActivityIndicator, StyleSheet, Platform, Alert, TouchableOpacity, Linking } from 'react-native';
+import { View, Text, ActivityIndicator, StyleSheet, Platform, Alert, TouchableOpacity, Linking, useWindowDimensions } from 'react-native';
 import { NavigationContainer, DarkTheme as NavigationDarkTheme } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
@@ -58,7 +58,14 @@ const AuthStack = () => (
 );
 
 // Ana Uygulama Sekmeleri (List, Add, Profile)
-const MainTabNavigator = () => (
+const MainTabNavigator = () => {
+  const { width: SCREEN_WIDTH } = useWindowDimensions();
+  // Web'de ekranın %70'i, max 560px; mobilde tam genişlik - 32px kenar boşluğu
+  const tabBarWidth = Platform.OS === 'web'
+    ? Math.min(SCREEN_WIDTH * 0.7, 560)
+    : SCREEN_WIDTH - 32;
+
+  return (
   <Tab.Navigator
     screenOptions={({ route }) => ({
       tabBarIcon: ({ focused, color, size }) => {
@@ -87,18 +94,17 @@ const MainTabNavigator = () => (
         ...Platform.select({
           web: {
             transform: [{ translateX: '-50%' }],
-            width: 400,
-            maxWidth: '90%',
+            width: tabBarWidth,
           }
         }),
-        height: Platform.OS === 'ios' ? 80 : 70,
+        height: Platform.OS === 'ios' ? 80 : 64,
         backgroundColor: colors.glassFloating,
         borderRadius: layout.borderRadius.round,
         borderWidth: 1,
         borderColor: colors.borderLight,
         ...layout.shadows.md,
-        paddingBottom: Platform.OS === 'ios' ? 20 : 6,
-        paddingTop: 6,
+        paddingBottom: Platform.OS === 'ios' ? 18 : 4,
+        paddingTop: 4,
         ...Platform.select({
           web: {
             backdropFilter: 'blur(20px)',
@@ -109,6 +115,7 @@ const MainTabNavigator = () => (
       tabBarItemStyle: {
         padding: 4,
         borderRadius: layout.borderRadius.round,
+        minWidth: 60,
       },
       headerStyle: {
         ...Platform.select({
@@ -129,32 +136,32 @@ const MainTabNavigator = () => (
       tabBarLabelStyle: {
         fontSize: 10,
         fontWeight: '700',
-        marginTop: 2,
+        marginTop: 1,
       }
     })}
   >
     <Tab.Screen 
       name="List" 
       component={ListScreen} 
-      options={{ title: 'Listem' }}
+      options={{ title: 'Listem', tabBarLabel: 'Listem' }}
     />
     <Tab.Screen 
       name="Add" 
       component={AddScreen} 
-      options={{ title: 'Kayıt Ekle' }}
+      options={{ title: 'Ekle', tabBarLabel: 'Ekle' }}
     />
     <Tab.Screen 
       name="Discover" 
       component={DiscoverScreen} 
-      options={{ title: 'Keşfet' }}
+      options={{ title: 'Keşfet', tabBarLabel: 'Keşfet' }}
     />
     <Tab.Screen 
       name="Profile" 
       component={ProfileScreen} 
-      options={{ title: 'Profilim' }}
+      options={{ title: 'Profil', tabBarLabel: 'Profil' }}
     />
-  </Tab.Navigator>
-);
+  );
+};
 
 // Ana Stack (Sekmeler + Detay Ekranı)
 const AppStack = () => (

@@ -134,41 +134,35 @@ const ListScreen = ({ navigation }) => {
       </View>
 
       {/* İzleme Durumu Sekmeleri */}
-      <View style={styles.tabScrollWrapper}>
-        <ScrollView 
-          horizontal 
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabScrollContent}
-        >
-          <View style={styles.tabContainerInner}>
-            {tabs.map((tab) => {
-              const isActive = activeTab === tab.key;
-              const count = getTabCount(tab.key);
-              return (
-                <TouchableOpacity
-                  key={tab.key}
-                  style={[styles.tabBtn, isActive && styles.tabBtnActive]}
-                  onPress={() => setActiveTab(tab.key)}
-                  activeOpacity={0.8}
-                >
-                  <Ionicons 
-                    name={isActive ? tab.icon : `${tab.icon}-outline`} 
-                    size={18} 
-                    color={isActive ? colors.primaryLight : colors.textSecondary} 
-                  />
-                  <Text style={[styles.tabBtnText, isActive && styles.tabBtnTextActive]}>
-                    {tab.label}
-                  </Text>
-                  {count > 0 && (
-                    <View style={[styles.tabBadge, isActive && styles.tabBadgeActive]}>
-                      <Text style={[styles.tabBadgeText, isActive && styles.tabBadgeTextActive]}>{count}</Text>
-                    </View>
-                  )}
-                </TouchableOpacity>
-              );
-            })}
-          </View>
-        </ScrollView>
+      <View style={styles.tabContainer}>
+        {tabs.map((tab) => {
+          const isActive = activeTab === tab.key;
+          const count = getTabCount(tab.key);
+          return (
+            <TouchableOpacity
+              key={tab.key}
+              style={[styles.tabBtn, isActive && styles.tabBtnActive]}
+              onPress={() => setActiveTab(tab.key)}
+              activeOpacity={0.8}
+            >
+              <Ionicons 
+                name={isActive ? tab.icon : `${tab.icon}-outline`} 
+                size={20} 
+                color={isActive ? colors.primaryLight : colors.textSecondary} 
+              />
+              {isActive && (
+                <Text style={[styles.tabBtnText, styles.tabBtnTextActive]} numberOfLines={1}>
+                  {tab.label}
+                </Text>
+              )}
+              {count > 0 && (
+                <View style={[styles.tabBadge, isActive && styles.tabBadgeActive]}>
+                  <Text style={[styles.tabBadgeText, isActive && styles.tabBadgeTextActive]}>{count}</Text>
+                </View>
+              )}
+            </TouchableOpacity>
+          );
+        })}
       </View>
 
       {/* Arama Barı ve Favori Filtresi */}
@@ -300,30 +294,26 @@ const styles = StyleSheet.native || StyleSheet.create({
     })
   },
   // Tab Stilleri
-  tabScrollWrapper: {
+  tabContainer: {
+    flexDirection: 'row',
+    marginHorizontal: layout.spacing.md,
     marginTop: layout.spacing.sm,
     marginBottom: 4,
-  },
-  tabScrollContent: {
-    paddingHorizontal: layout.spacing.md,
-  },
-  tabContainerInner: {
-    flexDirection: 'row',
     backgroundColor: colors.surfaceLight,
     borderRadius: layout.borderRadius.md,
     padding: 4,
     borderWidth: 1,
     borderColor: colors.border,
-    minWidth: '100%',
   },
   tabBtn: {
+    flex: 1,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: 10,
-    paddingHorizontal: 16,
+    paddingHorizontal: 6,
     borderRadius: layout.borderRadius.sm - 2,
-    gap: 5,
+    gap: 4,
   },
   tabBtnActive: {
     backgroundColor: colors.surface,

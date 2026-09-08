@@ -12,7 +12,6 @@ import {
   Modal,
   ScrollView,
   Alert,
-  Dimensions,
   useWindowDimensions
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -24,7 +23,6 @@ import { getImageUrl } from '../services/tmdb';
 // API Anahtarı .env dosyasından okunur
 const API_KEY = process.env.EXPO_PUBLIC_TMDB_API_KEY;
 const BASE_URL = 'https://api.themoviedb.org/3';
-const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 const DiscoverScreen = ({ navigation }) => {
   const [recommendations, setRecommendations] = useState([]);
