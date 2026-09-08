@@ -160,6 +160,7 @@ const MainTabNavigator = () => {
       component={ProfileScreen} 
       options={{ title: 'Profil', tabBarLabel: 'Profil' }}
     />
+  </Tab.Navigator>
   );
 };
 
