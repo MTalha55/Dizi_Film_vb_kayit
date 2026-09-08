@@ -24,6 +24,7 @@ import FeedScreen from '../screens/FeedScreen';
 import SearchUsersScreen from '../screens/SearchUsersScreen';
 import UserProfileScreen from '../screens/UserProfileScreen';
 import DiscoverScreen from '../screens/DiscoverScreen';
+import SettingsScreen from '../screens/SettingsScreen';
 
 const Stack = createNativeStackNavigator();
 const Tab = createBottomTabNavigator();
@@ -195,6 +196,10 @@ const AppStack = () => (
     <Stack.Screen 
       name="UserProfile" 
       component={UserProfileScreen} 
+    />
+    <Stack.Screen 
+      name="Settings" 
+      component={SettingsScreen} 
     />
   </Stack.Navigator>
 );

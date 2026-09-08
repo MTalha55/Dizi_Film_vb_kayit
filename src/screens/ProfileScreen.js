@@ -373,137 +373,19 @@ const ProfileScreen = ({ navigation }) => {
 
         {/* ── Ayarlar ── */}
         <View style={styles.settingsSection}>
-          <Text style={styles.sectionTitle}>⚙️ Ayarlar</Text>
-
-          {/* Arayüz Teması */}
-          <View style={styles.settingsCard}>
-            <View style={styles.settingsRow}>
-              <View style={[styles.settingsIconWrap, { backgroundColor: colors.primary + '18', borderColor: colors.primary + '35' }]}>
-                <Ionicons name="color-palette-outline" size={20} color={colors.primaryLight} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.settingsLabel}>Arayüz Teması</Text>
-                <Text style={styles.settingsValue}>Vurgu rengini değiştir</Text>
-              </View>
-            </View>
-            <View style={styles.themeSelectorRow}>
-              {Object.keys(accentThemes).map((name) => {
-                const themeInfo = accentThemes[name];
-                const isSelected = getThemeName() === name;
-                return (
-                  <TouchableOpacity
-                    key={name}
-                    style={[
-                      styles.themeOptionBtn,
-                      isSelected && { borderColor: themeInfo.primary, backgroundColor: themeInfo.primary + '12' }
-                    ]}
-                    onPress={() => changeTheme(name)}
-                    activeOpacity={0.8}
-                  >
-                    <View style={[styles.themeColorCircle, { backgroundColor: themeInfo.primary }]} />
-                    <Text style={[styles.themeOptionText, isSelected && { color: themeInfo.primary, fontWeight: '800' }]}>
-                      {name === 'purple' ? 'Mor' :
-                       name === 'blue' ? 'Mavi' :
-                       name === 'green' ? 'Yeşil' :
-                       name === 'pink' ? 'Pembe' :
-                       name === 'gold' ? 'Altın' : name}
-                    </Text>
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
-          </View>
-
-          {/* Destek - E-posta */}
           <TouchableOpacity
-            style={styles.settingsCard}
+            style={styles.settingsNavBtn}
             activeOpacity={0.8}
-            onPress={() => Linking.openURL('mailto:xenonstate.offical@gmail.com').catch(() => Alert.alert('E-posta', 'xenonstate.offical@gmail.com'))}
+            onPress={() => navigation.navigate('Settings')}
           >
-            <View style={styles.settingsRow}>
-              <View style={[styles.settingsIconWrap, { backgroundColor: '#3B82F6' + '18', borderColor: '#3B82F6' + '35' }]}>
-                <Ionicons name="mail-outline" size={20} color="#3B82F6" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.settingsLabel}>E-posta ile Destek</Text>
-                <Text style={[styles.settingsValue, { color: '#3B82F6' }]}>xenonstate.offical@gmail.com</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            <View style={[styles.settingsIconWrap, { backgroundColor: colors.primary + '18', borderColor: colors.primary + '35' }]}>
+              <Ionicons name="settings-outline" size={20} color={colors.primaryLight} />
             </View>
-          </TouchableOpacity>
-
-          {/* Destek - Instagram */}
-          <TouchableOpacity
-            style={styles.settingsCard}
-            activeOpacity={0.8}
-            onPress={() => Linking.openURL('https://instagram.com/the_xenonstate').catch(() => Alert.alert('Instagram', '@the_xenonstate'))}
-          >
-            <View style={styles.settingsRow}>
-              <View style={[styles.settingsIconWrap, { backgroundColor: '#E1306C' + '18', borderColor: '#E1306C' + '35' }]}>
-                <Ionicons name="logo-instagram" size={20} color="#E1306C" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.settingsLabel}>Instagram</Text>
-                <Text style={[styles.settingsValue, { color: '#E1306C' }]}>@the_xenonstate</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
+            <View style={{ flex: 1 }}>
+              <Text style={styles.settingsLabel}>Ayarlar</Text>
+              <Text style={styles.settingsValue}>Tema, destek, hesap ve daha fazlası</Text>
             </View>
-          </TouchableOpacity>
-
-          {/* Admin ile Mesajlaş */}
-          <TouchableOpacity
-            style={styles.settingsCard}
-            activeOpacity={0.8}
-            onPress={() => navigation.navigate('Chat')}
-          >
-            <View style={styles.settingsRow}>
-              <View style={[styles.settingsIconWrap, { backgroundColor: colors.accent + '18', borderColor: colors.accent + '35' }]}>
-                <Ionicons name="chatbubbles-outline" size={20} color={colors.accent} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={styles.settingsLabel}>Admin ile Mesajlaş</Text>
-                <Text style={styles.settingsValue}>Soru, öneri veya şikayetleriniz için</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-            </View>
-          </TouchableOpacity>
-
-          {/* Yönetici Paneli (sadece admin) */}
-          {user?.email?.toLowerCase() === 'mtkirbas@gmail.com' && (
-            <TouchableOpacity
-              style={styles.settingsCard}
-              activeOpacity={0.8}
-              onPress={() => navigation.navigate('Admin')}
-            >
-              <View style={styles.settingsRow}>
-                <View style={[styles.settingsIconWrap, { backgroundColor: colors.primary + '20', borderColor: colors.primary + '40' }]}>
-                  <Ionicons name="shield-checkmark" size={20} color={colors.primaryLight} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <Text style={styles.settingsLabel}>Yönetici Paneli</Text>
-                  <Text style={styles.settingsValue}>İstatistikler ve Üye Yönetimi</Text>
-                </View>
-                <Ionicons name="chevron-forward" size={16} color={colors.textMuted} />
-              </View>
-            </TouchableOpacity>
-          )}
-
-          {/* Oturumu Kapat */}
-          <TouchableOpacity
-            style={[styles.settingsCard, styles.logoutCard]}
-            activeOpacity={0.8}
-            onPress={handleLogout}
-          >
-            <View style={styles.settingsRow}>
-              <View style={[styles.settingsIconWrap, { backgroundColor: '#EF4444' + '18', borderColor: '#EF4444' + '35' }]}>
-                <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Text style={[styles.settingsLabel, { color: '#EF4444' }]}>Oturumu Kapat</Text>
-                <Text style={styles.settingsValue}>Hesabından güvenli çıkış yap</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={16} color="#EF4444" />
-            </View>
+            <Ionicons name="chevron-forward" size={18} color={colors.textMuted} />
           </TouchableOpacity>
         </View>
 
@@ -966,6 +848,18 @@ const styles = StyleSheet.create({
     paddingHorizontal: layout.spacing.md,
     marginTop: 4,
     marginBottom: 4,
+  },
+  settingsNavBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.glassSurface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    borderRadius: layout.borderRadius.md,
+    padding: layout.spacing.md,
+    marginBottom: 8,
+    ...layout.shadows.sm,
+    ...Platform.select({ web: { backdropFilter: 'blur(16px)', cursor: 'pointer' } }),
   },
   settingsCard: {
     backgroundColor: colors.glassSurface,
